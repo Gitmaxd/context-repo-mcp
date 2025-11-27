@@ -57,9 +57,36 @@ No installation needed - configure your MCP client to use `npx` (see configurati
 
 ### Claude Desktop
 
-**macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
+#### Step 1: Locate the Configuration File
 
-**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
+**macOS:**
+```bash
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+**Windows:**
+```
+%APPDATA%\Claude\claude_desktop_config.json
+```
+
+#### Step 2: Open the Configuration File
+
+**macOS:**
+```bash
+# Open in your default editor
+open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# Or create it if it doesn't exist
+mkdir -p "$HOME/Library/Application Support/Claude"
+touch "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+```
+
+**Windows:**
+Navigate to `%APPDATA%\Claude\` in File Explorer and open or create `claude_desktop_config.json`.
+
+#### Step 3: Add the Context Repo Server
+
+Add the `context-repo` entry to your `mcpServers` object:
 
 ```json
 {
@@ -75,7 +102,37 @@ No installation needed - configure your MCP client to use `npx` (see configurati
 }
 ```
 
-After editing, restart the application completely.
+If you already have other MCP servers configured, add `context-repo` alongside them:
+
+```json
+{
+  "mcpServers": {
+    "existing-server": {
+      "command": "...",
+      "args": ["..."]
+    },
+    "context-repo": {
+      "command": "npx",
+      "args": ["-y", "context-repo-mcp"],
+      "env": {
+        "CONTEXTREPO_API_KEY": "gm_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+#### Step 4: Restart Claude Desktop
+
+**macOS:** Press `Cmd+Q` to fully quit, then reopen Claude Desktop.
+
+**Windows:** Press `Alt+F4` or right-click the system tray icon and quit, then reopen.
+
+#### Step 5: Verify Connection
+
+1. Open a new conversation in Claude Desktop
+2. Look for the MCP tools indicator (hammer icon 🔨) in the bottom-right of the input box
+3. Click it to see "context-repo" listed with a green status
 
 ### Cursor IDE
 
