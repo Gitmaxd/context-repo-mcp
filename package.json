@@ -22,6 +22,12 @@
   ],
   "author": "Context Repo",
   "license": "MIT",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Gitmaxd/context-repo-mcp.git"
