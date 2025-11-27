@@ -3,11 +3,20 @@
 [![npm version](https://badge.fury.io/js/context-repo-mcp.svg)](https://www.npmjs.com/package/context-repo-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An MCP (Model Context Protocol) server that enables [Claude Desktop](https://claude.ai/download) to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections.
+An MCP (Model Context Protocol) server that enables any MCP-compatible client to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections.
+
+## Compatible MCP Clients
+
+This server works with any MCP-compatible application, including:
+
+- **[Claude Desktop](https://claude.ai/download)** - Anthropic's desktop app
+- **[Cursor IDE](https://cursor.sh)** - AI-powered code editor
+- **[Factory Droid CLI](https://factory.ai)** - AI coding agent
+- Any other application supporting the [Model Context Protocol](https://modelcontextprotocol.io/)
 
 ## What is MCP?
 
-The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standard by Anthropic that allows AI assistants to securely connect to external data sources and tools. This server lets Claude Desktop manage your Context Repo content directly.
+The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standard that allows AI assistants to securely connect to external data sources and tools. This server enables MCP clients to manage your Context Repo content directly.
 
 ## Features
 
@@ -19,7 +28,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or higher
-- [Claude Desktop](https://claude.ai/download)
+- An MCP-compatible client application
 - [Context Repo](https://contextrepo.com) account with an API key
 
 ## Installation
@@ -32,7 +41,7 @@ npm install -g context-repo-mcp
 
 ### Option 2: Run directly with npx
 
-No installation needed - configure Claude Desktop to use `npx` (see below).
+No installation needed - configure your MCP client to use `npx` (see configuration examples below).
 
 ## Getting an API Key
 
@@ -44,29 +53,13 @@ No installation needed - configure Claude Desktop to use `npx` (see below).
    - `documents.read` - For document and collection access
 5. Copy the key (starts with `gm_`)
 
-## Claude Desktop Configuration
+## Client Configuration
 
-### macOS
+### Claude Desktop
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+**macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-```json
-{
-  "mcpServers": {
-    "context-repo": {
-      "command": "npx",
-      "args": ["-y", "context-repo-mcp"],
-      "env": {
-        "CONTEXTREPO_API_KEY": "gm_your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-### Windows
-
-Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -82,15 +75,18 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 }
 ```
 
-### Using global installation
+After editing, restart the application completely.
 
-If you installed globally, use `node` directly:
+### Cursor IDE
+
+Add to your Cursor MCP settings:
 
 ```json
 {
   "mcpServers": {
     "context-repo": {
-      "command": "context-repo-mcp",
+      "command": "npx",
+      "args": ["-y", "context-repo-mcp"],
       "env": {
         "CONTEXTREPO_API_KEY": "gm_your_api_key_here"
       }
@@ -99,17 +95,34 @@ If you installed globally, use `node` directly:
 }
 ```
 
-After editing, **restart Claude Desktop completely** (Cmd+Q on macOS, Alt+F4 on Windows).
+### Other MCP Clients
 
-## Verify Connection
+The general configuration pattern for any MCP client:
 
-1. Open Claude Desktop
-2. Look for the MCP indicator (hammer icon) in the bottom-right of the input box
-3. Click it to see "context-repo" with a green status
+```json
+{
+  "command": "npx",
+  "args": ["-y", "context-repo-mcp"],
+  "env": {
+    "CONTEXTREPO_API_KEY": "gm_your_api_key_here"
+  }
+}
+```
+
+Or if installed globally:
+
+```json
+{
+  "command": "context-repo-mcp",
+  "env": {
+    "CONTEXTREPO_API_KEY": "gm_your_api_key_here"
+  }
+}
+```
 
 ## Available Tools
 
-Once connected, Claude can use these tools:
+Once connected, your MCP client can use these tools:
 
 | Tool | Description |
 |------|-------------|
@@ -123,9 +136,9 @@ Once connected, Claude can use these tools:
 | `get_document` | Get full document content |
 | `create_document` | Create a new document |
 
-## Example Prompts for Claude
+## Example Usage
 
-Try these after connecting:
+Try these commands with your MCP client:
 
 ```
 "List all my prompts"
@@ -138,11 +151,11 @@ Try these after connecting:
 
 ## Troubleshooting
 
-### Server not appearing in Claude Desktop
+### Server not connecting
 
-1. Verify your config JSON is valid: `python3 -m json.tool < config.json`
-2. Ensure you completely restarted Claude Desktop
-3. Check logs: `tail -f ~/Library/Logs/Claude/mcp*.log` (macOS)
+1. Verify your config JSON is valid
+2. Ensure you completely restarted your MCP client
+3. Check that Node.js 18+ is installed: `node --version`
 
 ### Authentication errors
 
@@ -182,4 +195,4 @@ MIT - see [LICENSE](LICENSE)
 
 - [Context Repo](https://contextrepo.com)
 - [MCP Documentation](https://modelcontextprotocol.io/)
-- [Claude Desktop](https://claude.ai/download)
+- [GitHub Repository](https://github.com/Gitmaxd/context-repo-mcp)

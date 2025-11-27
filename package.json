@@ -1,7 +1,7 @@
 {
   "name": "context-repo-mcp",
   "version": "1.0.0",
-  "description": "MCP Server for Context Repo - enables Claude Desktop integration with your prompts, documents, and collections",
+  "description": "MCP Server for Context Repo - connect any MCP client to your prompts, documents, and collections",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -12,12 +12,13 @@
   },
   "keywords": [
     "mcp",
-    "claude",
+    "model-context-protocol",
     "context-repo",
     "ai",
     "prompts",
-    "model-context-protocol",
-    "anthropic"
+    "claude",
+    "cursor",
+    "factory-droid"
   ],
   "author": "Context Repo",
   "license": "MIT",

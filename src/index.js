@@ -3,8 +3,8 @@
 /**
  * Context Repo MCP Server
  *
- * Enables Claude Desktop to interact with the Context Repo API
- * for managing prompts, documents, and collections.
+ * Enables any MCP-compatible client (Claude Desktop, Cursor, Factory Droid, etc.)
+ * to interact with the Context Repo API for managing prompts, documents, and collections.
  *
  * @see https://modelcontextprotocol.io/
  * @see https://contextrepo.com
@@ -32,7 +32,7 @@ if (!API_KEY) {
   console.error("║                                                                ║");
   console.error("║  To fix this:                                                  ║");
   console.error("║  1. Get an API key from https://contextrepo.com/dashboard      ║");
-  console.error("║  2. Add it to your Claude Desktop config                       ║");
+  console.error("║  2. Add it to your MCP client config                           ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   process.exit(1);
 }
@@ -451,7 +451,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  console.error("[Server] Ready - waiting for requests from Claude Desktop");
+  console.error("[Server] Ready - waiting for MCP client connection");
 }
 
 main().catch((error) => {
