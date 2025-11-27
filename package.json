@@ -1,0 +1,39 @@
+{
+  "name": "context-repo-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for Context Repo - enables Claude Desktop integration with your prompts, documents, and collections",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "context-repo-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "context-repo",
+    "ai",
+    "prompts",
+    "model-context-protocol",
+    "anthropic"
+  ],
+  "author": "Context Repo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gitmaxd/context-repo-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Gitmaxd/context-repo-mcp/issues"
+  },
+  "homepage": "https://github.com/Gitmaxd/context-repo-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "zod": "^3.25.0"
+  }
+}
