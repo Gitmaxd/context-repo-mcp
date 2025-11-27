@@ -207,6 +207,84 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: "get_collection",
+    description: "Get details of a specific collection including its items.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collectionId: { type: "string", description: "The unique ID of the collection" },
+        includeItems: { type: "boolean", description: "Include list of items in the collection (default: false)" },
+      },
+      required: ["collectionId"],
+    },
+  },
+  {
+    name: "create_collection",
+    description: "Create a new collection to organize prompts and documents.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Name of the collection" },
+        description: { type: "string", description: "Description of what the collection contains" },
+        color: { type: "string", description: "Color code for the collection (e.g., #f97316)" },
+        icon: { type: "string", description: "Emoji icon for the collection" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "update_collection",
+    description: "Update a collection's metadata.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collectionId: { type: "string", description: "The unique ID of the collection to update" },
+        name: { type: "string", description: "New name for the collection" },
+        description: { type: "string", description: "New description" },
+        color: { type: "string", description: "New color code" },
+        icon: { type: "string", description: "New emoji icon" },
+      },
+      required: ["collectionId"],
+    },
+  },
+  {
+    name: "delete_collection",
+    description: "Delete a collection. Items in the collection are not deleted.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collectionId: { type: "string", description: "The unique ID of the collection to delete" },
+      },
+      required: ["collectionId"],
+    },
+  },
+  {
+    name: "add_to_collection",
+    description: "Add documents or prompts to a collection.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collectionId: { type: "string", description: "The collection to add items to" },
+        itemIds: { type: "array", items: { type: "string" }, description: "Array of document or prompt IDs to add" },
+        itemType: { type: "string", enum: ["document", "prompt"], description: "Type of items being added" },
+      },
+      required: ["collectionId", "itemIds", "itemType"],
+    },
+  },
+  {
+    name: "remove_from_collection",
+    description: "Remove documents or prompts from a collection.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collectionId: { type: "string", description: "The collection to remove items from" },
+        itemIds: { type: "array", items: { type: "string" }, description: "Array of document or prompt IDs to remove" },
+        itemType: { type: "string", enum: ["document", "prompt"], description: "Type of items being removed" },
+      },
+      required: ["collectionId", "itemIds", "itemType"],
+    },
+  },
 
   // Document Tools
   {
@@ -344,6 +422,91 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         return {
           content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
+        };
+      }
+
+      case "get_collection": {
+        const result = await apiRequest("GET", `/v1/collections/${args.collectionId}`);
+        let response = result.data;
+
+        if (args.includeItems) {
+          const items = await apiRequest("GET", `/v1/collections/${args.collectionId}/items?limit=50`);
+          response = { ...response, items: items.data };
+        }
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
+        };
+      }
+
+      case "create_collection": {
+        const result = await apiRequest("POST", "/v1/collections", {
+          name: args.name,
+          description: args.description,
+          color: args.color,
+          icon: args.icon,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Created collection "${args.name}"\n\nID: ${result.data._id}`,
+            },
+          ],
+        };
+      }
+
+      case "update_collection": {
+        const { collectionId, ...updates } = args;
+        const result = await apiRequest("PATCH", `/v1/collections/${collectionId}`, updates);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Updated collection "${result.data.name}"`,
+            },
+          ],
+        };
+      }
+
+      case "delete_collection": {
+        await apiRequest("DELETE", `/v1/collections/${args.collectionId}`);
+        return {
+          content: [{ type: "text", text: `✓ Deleted collection ${args.collectionId}` }],
+        };
+      }
+
+      case "add_to_collection": {
+        const result = await apiRequest("POST", `/v1/collections/${args.collectionId}/items`, {
+          itemIds: args.itemIds,
+          itemType: args.itemType,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Added ${result.data.added} item(s) to collection\n\nAlready in collection: ${result.data.alreadyInCollection}`,
+            },
+          ],
+        };
+      }
+
+      case "remove_from_collection": {
+        const result = await apiRequest("PUT", `/v1/collections/${args.collectionId}/items`, {
+          itemIds: args.itemIds,
+          itemType: args.itemType,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Removed ${result.data.removed} item(s) from collection`,
+            },
+          ],
         };
       }
 
