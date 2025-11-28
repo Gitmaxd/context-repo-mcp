@@ -1,6 +1,7 @@
 # Context Repo MCP Server
 
 [![npm version](https://img.shields.io/npm/v/context-repo-mcp.svg)](https://www.npmjs.com/package/context-repo-mcp)
+[![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-Click%20Here-blue)](cursor://anysphere.cursor-deeplink/mcp/install?name=context-repo&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNvbnRleHQtcmVwby1tY3AiXSwiZW52Ijp7IkNPTlRFWFRSRVBPX0FQSV9LRVkiOiIifX0%3D)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An MCP (Model Context Protocol) server that enables any MCP-compatible client to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections.
@@ -135,6 +136,14 @@ If you already have other MCP servers configured, add `context-repo` alongside t
 3. Click it to see "context-repo" listed with a green status
 
 ### Cursor IDE
+
+**One-Click Install:**
+
+[![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-Click%20Here-blue)](cursor://anysphere.cursor-deeplink/mcp/install?name=context-repo&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNvbnRleHQtcmVwby1tY3AiXSwiZW52Ijp7IkNPTlRFWFRSRVBPX0FQSV9LRVkiOiIifX0%3D)
+
+> After clicking, open Cursor Settings → MCP and add your API key to the `CONTEXTREPO_API_KEY` environment variable.
+
+**Manual Configuration:**
 
 Add to your Cursor MCP settings:
 
