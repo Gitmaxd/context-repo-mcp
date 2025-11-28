@@ -20,9 +20,9 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 
 ## Features
 
-- **Prompt Management** - List, view, create, update, and delete prompts
-- **Document Management** - List, view, and create documents
-- **Collection Browsing** - List and search your collections
+- **Prompt Management** - Full CRUD: list, view, create, update, and delete prompts
+- **Document Management** - Full CRUD: list, view, create, update, and delete documents
+- **Collection Management** - Full CRUD: list, view, create, update, delete collections, plus add/remove items
 - **Secure Authentication** - API key-based authentication
 
 ## Prerequisites
@@ -181,29 +181,69 @@ Or if installed globally:
 
 Once connected, your MCP client can use these tools:
 
+### Prompts
+
 | Tool | Description |
 |------|-------------|
 | `list_prompts` | List prompts with optional search |
 | `get_prompt` | Get full prompt details by ID |
-| `create_prompt` | Create a new prompt |
+| `create_prompt` | Create a new prompt template |
 | `update_prompt` | Update an existing prompt |
-| `delete_prompt` | Delete a prompt |
-| `list_collections` | List your collections |
-| `list_documents` | List documents (optionally by collection) |
-| `get_document` | Get full document content |
+| `delete_prompt` | Permanently delete a prompt |
+
+### Documents
+
+| Tool | Description |
+|------|-------------|
+| `list_documents` | List documents (optionally filtered by collection) |
+| `get_document` | Get full document content by ID |
 | `create_document` | Create a new document |
+| `update_document` | Update an existing document |
+| `delete_document` | Permanently delete a document |
+
+### Collections
+
+| Tool | Description |
+|------|-------------|
+| `list_collections` | List all collections with optional search |
+| `get_collection` | Get collection details (optionally include items) |
+| `create_collection` | Create a new collection |
+| `update_collection` | Update collection metadata |
+| `delete_collection` | Delete a collection (items are preserved) |
+| `add_to_collection` | Add documents or prompts to a collection |
+| `remove_from_collection` | Remove items from a collection |
 
 ## Example Usage
 
 Try these commands with your MCP client:
 
+### Prompts
 ```
 "List all my prompts"
 "Search for prompts about code review"
 "Create a prompt called 'Bug Report' for documenting software bugs"
 "Show me the details of prompt [ID]"
+"Update prompt [ID] with a new description"
+"Delete prompt [ID]"
+```
+
+### Documents
+```
+"List all my documents"
+"Show me document [ID]"
+"Create a document called 'Meeting Notes' with today's discussion"
+"Update the title of document [ID]"
+"Delete document [ID]"
+```
+
+### Collections
+```
 "What collections do I have?"
-"List documents in collection [ID]"
+"Create a collection called 'Project Alpha' with a blue color"
+"Show me collection [ID] with all its items"
+"Add document [ID] to collection [ID]"
+"Remove prompt [ID] from collection [ID]"
+"Delete collection [ID]"
 ```
 
 ## Troubleshooting
