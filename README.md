@@ -1,6 +1,7 @@
 # Context Repo MCP Server
 
 [![npm version](https://img.shields.io/npm/v/context-repo-mcp.svg)](https://www.npmjs.com/package/context-repo-mcp)
+[![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-One%20Click-blue)](https://contextrepo.com/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An MCP (Model Context Protocol) server that enables any MCP-compatible client to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections.
@@ -135,6 +136,10 @@ If you already have other MCP servers configured, add `context-repo` alongside t
 3. Click it to see "context-repo" listed with a green status
 
 ### Cursor IDE
+
+**One-Click Install:** Visit [contextrepo.com/mcp-server](https://contextrepo.com/mcp-server) and click the "Install to Cursor" button.
+
+**Manual Configuration:**
 
 Add to your Cursor MCP settings:
 
