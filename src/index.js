@@ -323,6 +323,31 @@ const TOOLS = [
       required: ["title", "content"],
     },
   },
+  {
+    name: "update_document",
+    description: "Update an existing document. Only provide fields you want to change.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The unique ID of the document to update" },
+        title: { type: "string", description: "New title (optional)" },
+        content: { type: "string", description: "New content (optional)" },
+        changeLog: { type: "string", description: "Description of what changed (for version history)" },
+      },
+      required: ["documentId"],
+    },
+  },
+  {
+    name: "delete_document",
+    description: "Permanently delete a document. This action cannot be undone.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The unique ID of the document to delete" },
+      },
+      required: ["documentId"],
+    },
+  },
 ];
 
 // =============================================================================
@@ -549,6 +574,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: `✓ Created document "${args.title}"\n\nID: ${result.data._id}`,
             },
           ],
+        };
+      }
+
+      case "update_document": {
+        const { documentId, ...updates } = args;
+        const result = await apiRequest("PATCH", `/v1/documents/${documentId}`, updates);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Updated document "${result.data.title}"`,
+            },
+          ],
+        };
+      }
+
+      case "delete_document": {
+        await apiRequest("DELETE", `/v1/documents/${args.documentId}`);
+        return {
+          content: [{ type: "text", text: `✓ Deleted document ${args.documentId}` }],
         };
       }
 
