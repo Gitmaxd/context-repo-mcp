@@ -1,0 +1,129 @@
+{
+  "manifest_version": "0.3",
+  "name": "context-repo",
+  "display_name": "Context Repo",
+  "version": "1.0.2",
+  "description": "Access your prompts, documents, and collections from Context Repo directly in Claude",
+  "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Create, search, update, and organize your AI content using natural language.\n\n**Features:**\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
+  "author": {
+    "name": "Context Repo",
+    "url": "https://contextrepo.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gitmaxd/context-repo-mcp.git"
+  },
+  "homepage": "https://contextrepo.com",
+  "documentation": "https://github.com/Gitmaxd/context-repo-mcp#readme",
+  "support": "https://github.com/Gitmaxd/context-repo-mcp/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": [
+    "prompts",
+    "documents",
+    "collections",
+    "productivity"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "CONTEXTREPO_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "Your Context Repo API key. Get one at contextrepo.com/dashboard → Settings → API Keys",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    {
+      "name": "list_prompts",
+      "description": "List all prompts with optional search"
+    },
+    {
+      "name": "get_prompt",
+      "description": "Get full prompt details by ID"
+    },
+    {
+      "name": "create_prompt",
+      "description": "Create a new prompt template"
+    },
+    {
+      "name": "update_prompt",
+      "description": "Update an existing prompt"
+    },
+    {
+      "name": "delete_prompt",
+      "description": "Delete a prompt"
+    },
+    {
+      "name": "list_collections",
+      "description": "List all collections"
+    },
+    {
+      "name": "get_collection",
+      "description": "Get collection details"
+    },
+    {
+      "name": "create_collection",
+      "description": "Create a new collection"
+    },
+    {
+      "name": "update_collection",
+      "description": "Update collection metadata"
+    },
+    {
+      "name": "delete_collection",
+      "description": "Delete a collection"
+    },
+    {
+      "name": "add_to_collection",
+      "description": "Add items to a collection"
+    },
+    {
+      "name": "remove_from_collection",
+      "description": "Remove items from a collection"
+    },
+    {
+      "name": "list_documents",
+      "description": "List documents"
+    },
+    {
+      "name": "get_document",
+      "description": "Get document content"
+    },
+    {
+      "name": "create_document",
+      "description": "Create a new document"
+    },
+    {
+      "name": "update_document",
+      "description": "Update a document"
+    },
+    {
+      "name": "delete_document",
+      "description": "Delete a document"
+    }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

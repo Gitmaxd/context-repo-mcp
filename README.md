@@ -1,6 +1,7 @@
 # Context Repo MCP Server
 
 [![npm version](https://img.shields.io/npm/v/context-repo-mcp.svg)](https://www.npmjs.com/package/context-repo-mcp)
+[![Claude Desktop Extension](https://img.shields.io/badge/Claude%20Desktop-Extension-purple)](https://github.com/Gitmaxd/context-repo-mcp/releases)
 [![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-One%20Click-blue)](https://contextrepo.com/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -33,6 +34,22 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 - [Context Repo](https://contextrepo.com) account with an API key
 
 ## Installation
+
+### Claude Desktop Extension (One-Click Install)
+
+The easiest way to use Context Repo with Claude Desktop:
+
+1. **Download** the latest `.mcpb` file from [Releases](https://github.com/Gitmaxd/context-repo-mcp/releases)
+2. **Install** using one of these methods:
+   - **Double-click** the `.mcpb` file to open Claude Desktop's install dialog
+   - **Drag and drop** the file into Claude Desktop window
+   - **File menu:** Developer → Extensions → Install Extension → select the file
+3. **Enter your API key** when prompted (get one at [contextrepo.com/dashboard](https://contextrepo.com/dashboard))
+4. **Done!** Start using Context Repo in any conversation
+
+> The extension securely stores your API key in your system's credential manager.
+
+---
 
 ### Option 1: Install globally from npm
 
