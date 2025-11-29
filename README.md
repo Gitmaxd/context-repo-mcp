@@ -174,6 +174,22 @@ Add to your Cursor MCP settings:
 }
 ```
 
+### Factory.ai Droid CLI
+
+Factory's Droid CLI can auto-install MCP servers directly from a prompt. Simply paste this into any Droid session:
+
+```
+Install the following MCP Server to Droid using the NPX method.  
+MCP: https://github.com/Gitmaxd/context-repo-mcp
+API Key: <YOUR CONTEXT REPO API KEY>
+```
+
+Replace `<YOUR CONTEXT REPO API KEY>` with your actual API key (starts with `gm_`).
+
+Droid will automatically install and configure the MCP server - no restart required.
+
+> **Prefer manual configuration?** You can add the Context Repo MCP server directly to your Droid MCP configuration file using the same JSON format shown in the [Other MCP Clients](#other-mcp-clients) section below.
+
 ### Other MCP Clients
 
 The general configuration pattern for any MCP client:
