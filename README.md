@@ -306,13 +306,6 @@ CONTEXTREPO_API_KEY=gm_your_key_here npx context-repo-mcp
 
 You should see the startup banner. Press Ctrl+C to exit.
 
-## Rate Limits
-
-| Operation | Limit |
-|-----------|-------|
-| Read operations | 120/minute |
-| Write operations | 100/minute |
-
 ## Development
 
 ```bash
