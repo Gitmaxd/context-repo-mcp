@@ -22,6 +22,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 
 ## Features
 
+- **Semantic Search** - Natural language search across all your content with AI-powered relevance matching
 - **Prompt Management** - Full CRUD: list, view, create, update, and delete prompts
 - **Document Management** - Full CRUD: list, view, create, update, and delete documents
 - **Collection Management** - Full CRUD: list, view, create, update, delete collections, plus add/remove items
@@ -251,6 +252,72 @@ Once connected, your MCP client can use these tools:
 | `add_to_collection` | Add documents or prompts to a collection |
 | `remove_from_collection` | Remove items from a collection |
 
+### Search
+
+| Tool | Description |
+|------|-------------|
+| `search_context_repo` | Semantic search across all prompts, documents, and collections |
+
+## Semantic Search
+
+The `search_context_repo` tool enables natural language search across your entire Context Repo. Instead of requiring exact keyword matches, it understands the meaning of your query.
+
+### How It Works
+
+Semantic search uses AI embeddings to understand the meaning behind your query:
+
+1. **Your query is converted** to a vector embedding (numerical representation of meaning)
+2. **Content is matched** against document/prompt embeddings stored in Context Repo
+3. **Results are ranked** by semantic similarity (relevance score 0-1)
+4. **Collections are scored** based on the relevance of their contained items
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | Natural language search query |
+| `type` | string | No | `"all"` | Filter: `"prompts"`, `"documents"`, `"collections"`, or `"all"` |
+| `semantic` | boolean | No | `true` | Use semantic search. Set `false` for literal matching |
+
+### Relevance Scoring
+
+Results are filtered by relevance score (0.0 to 1.0):
+
+| Score | Interpretation |
+|-------|----------------|
+| 0.7+ | Excellent match - highly relevant |
+| 0.5-0.7 | Good match - likely relevant |
+| 0.35-0.5 | Moderate match - possibly relevant |
+| < 0.35 | Filtered out (below threshold) |
+
+**Default threshold: 0.35** - Results below this score are not returned.
+
+### Example Queries
+
+**Finding related content:**
+```
+"Search for my meeting notes"
+"Find prompts about code review"
+"What documents do I have about API design?"
+```
+
+**Filtering by type:**
+```
+"Search for 'project planning' in documents only"
+"Find collection with my research materials"
+```
+
+**Literal search (exact match):**
+```
+"Search for 'README.md' with semantic disabled"
+```
+
+### Tips for Better Results
+
+1. **Be descriptive** - "prompts for writing technical documentation" works better than "docs"
+2. **Use natural language** - Ask questions like you would to a colleague
+3. **Include context** - "meeting notes from last sprint" is more precise than "notes"
+
 ## Example Usage
 
 Try these commands with your MCP client:
@@ -282,6 +349,14 @@ Try these commands with your MCP client:
 "Add document [ID] to collection [ID]"
 "Remove prompt [ID] from collection [ID]"
 "Delete collection [ID]"
+```
+
+### Search
+```
+"Search for documents about authentication"
+"Find prompts related to code review"
+"What do I have about project planning?"
+"Search my collections for research materials"
 ```
 
 ## Troubleshooting
