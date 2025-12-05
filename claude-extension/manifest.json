@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "context-repo",
   "display_name": "Context Repo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Access your prompts, documents, and collections from Context Repo directly in Claude",
   "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Create, search, update, and organize your AI content using natural language.\n\n**Features:**\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
   "author": {
@@ -114,6 +114,10 @@
     {
       "name": "delete_document",
       "description": "Delete a document"
+    },
+    {
+      "name": "search_context_repo",
+      "description": "Search across all prompts, documents, and collections using semantic search"
     }
   ],
   "compatibility": {
