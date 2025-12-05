@@ -348,6 +348,31 @@ const TOOLS = [
       required: ["documentId"],
     },
   },
+
+  // Search Tool
+  {
+    name: "search_context_repo",
+    description: "Search across all prompts, documents, and collections. Uses semantic search by default for natural language understanding.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The search query",
+        },
+        type: {
+          type: "string",
+          enum: ["prompts", "documents", "collections", "all"],
+          description: "Filter by type (default: all)",
+        },
+        semantic: {
+          type: "boolean",
+          description: "Use semantic search for natural language understanding (default: true). Set to false for exact literal matching.",
+        },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
 // =============================================================================
@@ -595,6 +620,58 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await apiRequest("DELETE", `/v1/documents/${args.documentId}`);
         return {
           content: [{ type: "text", text: `✓ Deleted document ${args.documentId}` }],
+        };
+      }
+
+      case "search_context_repo": {
+        const params = new URLSearchParams();
+        params.set("q", args.query);
+        if (args.type) params.set("type", args.type);
+        if (args.semantic === false) params.set("semantic", "false");
+
+        const result = await apiRequest("GET", `/v1/search?${params}`);
+
+        // Format results similar to App MCP Server
+        const sections = [];
+
+        if (result.data.prompts?.length > 0) {
+          sections.push(
+            `### Prompts (${result.data.prompts.length})\n${result.data.prompts
+              .map(
+                (p) =>
+                  `- **${p.title}** (score: ${p.score.toFixed(2)}) - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`
+              )
+              .join("\n")}`
+          );
+        }
+
+        if (result.data.documents?.length > 0) {
+          sections.push(
+            `### Documents (${result.data.documents.length})\n${result.data.documents
+              .map((d) => `- **${d.title}** (score: ${d.score.toFixed(2)})`)
+              .join("\n")}`
+          );
+        }
+
+        if (result.data.collections?.length > 0) {
+          sections.push(
+            `### Collections (${result.data.collections.length})\n${result.data.collections
+              .map((c) => `- **${c.name}** (score: ${c.score.toFixed(2)}, ${c.matchedItems} matched items)`)
+              .join("\n")}`
+          );
+        }
+
+        const header = result.meta?.semantic
+          ? `## Semantic Search Results for "${args.query}"`
+          : `## Search Results for "${args.query}"`;
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: sections.length > 0 ? `${header}\n\n${sections.join("\n\n")}` : `No results found for "${args.query}".`,
+            },
+          ],
         };
       }
 
