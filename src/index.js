@@ -107,7 +107,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     capabilities: {
@@ -192,6 +192,38 @@ const TOOLS = [
         promptId: { type: "string", description: "The unique ID of the prompt to delete" },
       },
       required: ["promptId"],
+    },
+  },
+  {
+    name: "get_prompt_versions",
+    description: "Get the version history of a prompt. Shows all previous versions with change logs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        promptId: {
+          type: "string",
+          description: "The unique ID of the prompt",
+        },
+      },
+      required: ["promptId"],
+    },
+  },
+  {
+    name: "restore_prompt_version",
+    description: "Restore a prompt to a previous version. Creates a new version with the restored content.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        promptId: {
+          type: "string",
+          description: "The unique ID of the prompt",
+        },
+        versionId: {
+          type: "string",
+          description: "The ID of the version to restore (from get_prompt_versions)",
+        },
+      },
+      required: ["promptId", "versionId"],
     },
   },
 
@@ -348,6 +380,38 @@ const TOOLS = [
       required: ["documentId"],
     },
   },
+  {
+    name: "get_document_versions",
+    description: "Get the version history of a document. Shows all previous versions with change logs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: {
+          type: "string",
+          description: "The unique ID of the document",
+        },
+      },
+      required: ["documentId"],
+    },
+  },
+  {
+    name: "restore_document_version",
+    description: "Restore a document to a previous version. Creates a new version with the restored content.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: {
+          type: "string",
+          description: "The unique ID of the document",
+        },
+        versionId: {
+          type: "string",
+          description: "The ID of the version to restore (from get_document_versions)",
+        },
+      },
+      required: ["documentId", "versionId"],
+    },
+  },
 
   // Search Tool
   {
@@ -454,6 +518,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await apiRequest("DELETE", `/v1/prompts/${args.promptId}`);
         return {
           content: [{ type: "text", text: `✓ Deleted prompt ${args.promptId}` }],
+        };
+      }
+
+      case "get_prompt_versions": {
+        const result = await apiRequest("GET", `/v1/prompts/${args.promptId}/versions`);
+
+        if (!result.data || result.data.length === 0) {
+          return {
+            content: [{ type: "text", text: "No version history found for this prompt." }],
+          };
+        }
+
+        const formatted = result.data
+          .map(
+            (v, i) =>
+              `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
+              `- **ID:** ${v._id}\n` +
+              `- **Changed by:** ${v.userName || "Unknown"}\n` +
+              `- **Change log:** ${v.changeLog || "No description"}\n` +
+              (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
+          )
+          .join("\n\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `## Version History (${result.data.length} versions)\n\n${formatted}`,
+            },
+          ],
+        };
+      }
+
+      case "restore_prompt_version": {
+        const result = await apiRequest("POST", `/v1/prompts/${args.promptId}/restore`, {
+          versionId: args.versionId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Successfully restored prompt to previous version.\n\nNew version: ${result.data?.currentVersion || "unknown"}`,
+            },
+          ],
         };
       }
 
@@ -623,6 +732,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "get_document_versions": {
+        const result = await apiRequest("GET", `/v1/documents/${args.documentId}/versions`);
+
+        if (!result.data || result.data.length === 0) {
+          return {
+            content: [{ type: "text", text: "No version history found for this document." }],
+          };
+        }
+
+        const formatted = result.data
+          .map(
+            (v, i) =>
+              `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
+              `- **ID:** ${v._id}\n` +
+              `- **Title:** ${v.title}\n` +
+              `- **Changed by:** ${v.userName || "Unknown"}\n` +
+              `- **Change log:** ${v.changeLog || "No description"}\n` +
+              (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
+          )
+          .join("\n\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `## Version History (${result.data.length} versions)\n\n${formatted}`,
+            },
+          ],
+        };
+      }
+
+      case "restore_document_version": {
+        const result = await apiRequest("POST", `/v1/documents/${args.documentId}/restore`, {
+          versionId: args.versionId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✓ Successfully restored document to previous version.\n\nNew version: ${result.data?.currentVersion || "unknown"}`,
+            },
+          ],
+        };
+      }
+
       case "search_context_repo": {
         const params = new URLSearchParams();
         params.set("q", args.query);
@@ -728,7 +883,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.0.0                   ║");
+  console.error("║              Context Repo MCP Server v1.1.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

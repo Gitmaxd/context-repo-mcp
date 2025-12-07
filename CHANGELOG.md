@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-07
+
+### Added
+- `get_prompt_versions` tool - View version history of prompts with change logs
+- `restore_prompt_version` tool - Restore prompts to previous versions
+- `get_document_versions` tool - View version history of documents with change logs
+- `restore_document_version` tool - Restore documents to previous versions
+- Full feature parity with App MCP Server (22 tools total, excluding `get_user_info` per security review)
+
 ## [1.0.2] - 2025-11-28
 
 ### Added

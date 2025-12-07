@@ -23,9 +23,10 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 ## Features
 
 - **Semantic Search** - Natural language search across all your content with AI-powered relevance matching
-- **Prompt Management** - Full CRUD: list, view, create, update, and delete prompts
-- **Document Management** - Full CRUD: list, view, create, update, and delete documents
+- **Prompt Management** - Full CRUD with version history: list, view, create, update, delete, and restore prompts
+- **Document Management** - Full CRUD with version history: list, view, create, update, delete, and restore documents
 - **Collection Management** - Full CRUD: list, view, create, update, delete collections, plus add/remove items
+- **Version History** - View and restore previous versions of prompts and documents
 - **Secure Authentication** - API key-based authentication
 
 ## Prerequisites
@@ -229,6 +230,8 @@ Once connected, your MCP client can use these tools:
 | `create_prompt` | Create a new prompt template |
 | `update_prompt` | Update an existing prompt |
 | `delete_prompt` | Permanently delete a prompt |
+| `get_prompt_versions` | Get version history of a prompt |
+| `restore_prompt_version` | Restore a prompt to a previous version |
 
 ### Documents
 
@@ -239,6 +242,8 @@ Once connected, your MCP client can use these tools:
 | `create_document` | Create a new document |
 | `update_document` | Update an existing document |
 | `delete_document` | Permanently delete a document |
+| `get_document_versions` | Get version history of a document |
+| `restore_document_version` | Restore a document to a previous version |
 
 ### Collections
 
@@ -330,6 +335,8 @@ Try these commands with your MCP client:
 "Show me the details of prompt [ID]"
 "Update prompt [ID] with a new description"
 "Delete prompt [ID]"
+"Show me the version history of prompt [ID]"
+"Restore prompt [ID] to version [VERSION_ID]"
 ```
 
 ### Documents
@@ -339,6 +346,8 @@ Try these commands with your MCP client:
 "Create a document called 'Meeting Notes' with today's discussion"
 "Update the title of document [ID]"
 "Delete document [ID]"
+"Show me the version history of document [ID]"
+"Restore document [ID] to version [VERSION_ID]"
 ```
 
 ### Collections
