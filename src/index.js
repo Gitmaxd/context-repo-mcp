@@ -23,7 +23,7 @@ import {
 // CONFIGURATION
 // =============================================================================
 
-const API_BASE_URL = "https://adjoining-hare-150.convex.site";
+const API_BASE_URL = process.env.CONTEXTREPO_API_URL || "https://api.contextrepo.com";
 const API_KEY = process.env.CONTEXTREPO_API_KEY;
 
 if (!API_KEY) {
