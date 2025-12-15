@@ -788,14 +788,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         // Format results similar to App MCP Server
         const sections = [];
+        const isSemantic = Boolean(result.meta?.semantic);
 
         if (result.data.prompts?.length > 0) {
           sections.push(
             `### Prompts (${result.data.prompts.length})\n${result.data.prompts
-              .map(
-                (p) =>
-                  `- **${p.title}** (score: ${p.score.toFixed(2)}) - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`
-              )
+              .map((p) => {
+                if (isSemantic && typeof p.score === "number") {
+                  return `- **${p.title}** (score: ${p.score.toFixed(2)}) - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`;
+                }
+                return `- **${p.title}** - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`;
+              })
               .join("\n")}`
           );
         }
@@ -803,7 +806,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (result.data.documents?.length > 0) {
           sections.push(
             `### Documents (${result.data.documents.length})\n${result.data.documents
-              .map((d) => `- **${d.title}** (score: ${d.score.toFixed(2)})`)
+              .map((d) => {
+                if (isSemantic && typeof d.score === "number") {
+                  return `- **${d.title}** (score: ${d.score.toFixed(2)})`;
+                }
+                return `- **${d.title}**`;
+              })
               .join("\n")}`
           );
         }
@@ -811,7 +819,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (result.data.collections?.length > 0) {
           sections.push(
             `### Collections (${result.data.collections.length})\n${result.data.collections
-              .map((c) => `- **${c.name}** (score: ${c.score.toFixed(2)}, ${c.matchedItems} matched items)`)
+              .map((c) => {
+                if (isSemantic && typeof c.score === "number") {
+                  const matchedItems = typeof c.matchedItems === "number" ? `, ${c.matchedItems} matched items` : "";
+                  return `- **${c.name}** (score: ${c.score.toFixed(2)}${matchedItems})`;
+                }
+                const description = c.description ? ` - ${c.description}` : "";
+                return `- **${c.name}**${description}`;
+              })
               .join("\n")}`
           );
         }
