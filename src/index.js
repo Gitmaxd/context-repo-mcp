@@ -480,6 +480,27 @@ const TOOLS = [
   },
 
   {
+    name: "pd_read",
+    description:
+      "Retrieve a single document chunk with full hierarchy metadata for deep inspection. " +
+      "Use after pd_search (to inspect a search result in detail) or pd_expand (to examine a " +
+      "navigated chunk). Returns the complete content plus structural metadata: document position " +
+      "(sectionPath, chunkIndex), navigation IDs (parentChunkId, prevSiblingId, nextSiblingId), " +
+      "and content metadata (wordCount, startIndex, endIndex, headingText). " +
+      "Use pd_expand with the returned chunkId to navigate to related chunks.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chunkId: {
+          type: "string",
+          description: "The chunk ID to read (from pd_search or pd_expand results)",
+        },
+      },
+      required: ["chunkId"],
+    },
+  },
+
+  {
     name: "pd_expand",
     description:
       "Navigate the document hierarchy from a specific chunk. Used after pd_search to explore " +
@@ -994,6 +1015,55 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         return {
           content: [{ type: "text", text }],
+        };
+      }
+
+      case "pd_read": {
+        const readResult = await apiRequest("GET", `/v1/pd/read/${args.chunkId}`);
+        const chunk = readResult.data;
+
+        const lines = [
+          `## Chunk Details`,
+          ``,
+          `- **chunkId:** ${chunk.chunkId}`,
+          `- **Level:** ${chunk.level}`,
+          `- **Content:**`,
+          ``,
+          chunk.content,
+          ``,
+          `### Hierarchy`,
+          `- **Document:** ${chunk.hierarchy.documentTitle} (${chunk.hierarchy.documentId})`,
+          `- **Section Path:** ${chunk.hierarchy.sectionPath}`,
+          ``,
+          `### Position`,
+          `- **Chunk Index:** ${chunk.hierarchy.position.chunkIndex}`,
+        ];
+
+        if (chunk.hierarchy.position.parentChunkId) {
+          lines.push(`- **Parent Chunk:** ${chunk.hierarchy.position.parentChunkId}`);
+        }
+        if (chunk.hierarchy.position.prevSiblingId) {
+          lines.push(`- **Prev Sibling:** ${chunk.hierarchy.position.prevSiblingId}`);
+        }
+        if (chunk.hierarchy.position.nextSiblingId) {
+          lines.push(`- **Next Sibling:** ${chunk.hierarchy.position.nextSiblingId}`);
+        }
+
+        lines.push(``);
+        lines.push(`### Metadata`);
+        lines.push(`- **Word Count:** ${chunk.metadata.wordCount}`);
+        lines.push(`- **Start Index:** ${chunk.metadata.startIndex}`);
+        lines.push(`- **End Index:** ${chunk.metadata.endIndex}`);
+
+        if (chunk.metadata.headingText) {
+          lines.push(`- **Heading:** ${chunk.metadata.headingText}`);
+        }
+
+        lines.push(``);
+        lines.push(`> Use pd_expand with this chunkId to navigate to related chunks.`);
+
+        return {
+          content: [{ type: "text", text: lines.join("\n") }],
         };
       }
 
