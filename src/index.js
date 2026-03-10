@@ -26,6 +26,9 @@ import {
 const API_BASE_URL = process.env.CONTEXTREPO_API_URL || "https://api.contextrepo.com";
 const API_KEY = process.env.CONTEXTREPO_API_KEY;
 
+// Auto-session state for progressive disclosure search deduplication
+let currentSessionId = null;
+
 if (!API_KEY) {
   console.error("╔════════════════════════════════════════════════════════════════╗");
   console.error("║  ERROR: CONTEXTREPO_API_KEY environment variable is required  ║");
@@ -437,6 +440,44 @@ const TOOLS = [
       required: ["query"],
     },
   },
+
+  // Progressive Disclosure Tools
+  {
+    name: "pd_search",
+    description:
+      "Search documents using vector similarity and return hierarchical chunk results. " +
+      "Unlike search_context_repo (which returns flat document/prompt/collection matches), " +
+      "pd_search returns ranked document chunks with hierarchy metadata (level, parentId, siblingIds) " +
+      "enabling progressive disclosure navigation. Each result includes a chunkId that can be passed to " +
+      "pd_expand (to navigate up/down/next/previous in the hierarchy) or pd_read (to get full chunk details). " +
+      "Use this as the entry point for deep document exploration.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The search query for vector similarity matching",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of results to return (server default: 10)",
+        },
+        sessionId: {
+          type: "string",
+          description: "Optional session ID for result deduplication across searches. If omitted, an auto-session is created and reused.",
+        },
+        collectionId: {
+          type: "string",
+          description: "Filter results to a specific collection",
+        },
+        documentId: {
+          type: "string",
+          description: "Filter results to a specific document",
+        },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
 // =============================================================================
@@ -842,6 +883,85 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: sections.length > 0 ? `${header}\n\n${sections.join("\n\n")}` : `No results found for "${args.query}".`,
             },
           ],
+        };
+      }
+
+      case "pd_search": {
+        // Build the search request body
+        const searchBody = { query: args.query };
+        if (args.limit !== undefined) searchBody.limit = args.limit;
+        if (args.collectionId) searchBody.collectionId = args.collectionId;
+        if (args.documentId) searchBody.documentId = args.documentId;
+
+        // Determine sessionId to use
+        let sessionIdToUse = null;
+
+        if (args.sessionId) {
+          // Explicit sessionId provided — use it directly, don't touch auto-session
+          sessionIdToUse = args.sessionId;
+        } else {
+          // No explicit sessionId — use auto-session
+          if (!currentSessionId) {
+            // First call: create a session
+            try {
+              const sessionResult = await apiRequest("POST", "/v1/pd/session", {});
+              currentSessionId = sessionResult.data.sessionId;
+            } catch (err) {
+              // Session creation failed — proceed without session (graceful degradation)
+              console.error(`[PD] Auto-session creation failed: ${err.message}`);
+            }
+          }
+          sessionIdToUse = currentSessionId;
+        }
+
+        if (sessionIdToUse) {
+          searchBody.sessionId = sessionIdToUse;
+        }
+
+        const searchResult = await apiRequest("POST", "/v1/pd/search", searchBody);
+        const results = searchResult.data.results;
+        const meta = searchResult.data.meta;
+
+        if (!results || results.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No results found for "${meta?.query || args.query}".`,
+              },
+            ],
+          };
+        }
+
+        // Format each result with hierarchy metadata
+        const formattedResults = results.map((r, i) => {
+          const preview = r.content?.length > 200 ? r.content.slice(0, 200) + "..." : r.content;
+          const lines = [
+            `### Result ${i + 1}`,
+            `- **chunkId:** ${r.chunkId}`,
+            `- **Score:** ${typeof r.score === "number" ? r.score.toFixed(2) : r.score}`,
+            `- **Level:** ${r.level}`,
+            `- **Document:** ${r.documentTitle} (${r.documentId})`,
+            `- **Content:** ${preview}`,
+          ];
+
+          if (r.parentId) {
+            lines.push(`- **Parent:** ${r.parentId}`);
+          }
+
+          if (r.siblingIds) {
+            if (r.siblingIds.prev) lines.push(`- **Prev Sibling:** ${r.siblingIds.prev}`);
+            if (r.siblingIds.next) lines.push(`- **Next Sibling:** ${r.siblingIds.next}`);
+          }
+
+          return lines.join("\n");
+        });
+
+        const header = `## Progressive Disclosure Search: "${meta.query}"\n\n**Total Results:** ${meta.totalResults}`;
+        const text = `${header}\n\n${formattedResults.join("\n\n")}`;
+
+        return {
+          content: [{ type: "text", text }],
         };
       }
 
