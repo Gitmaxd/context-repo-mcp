@@ -478,6 +478,38 @@ const TOOLS = [
       required: ["query"],
     },
   },
+
+  {
+    name: "pd_expand",
+    description:
+      "Navigate the document hierarchy from a specific chunk. Used after pd_search to explore " +
+      "related content in 5 directions: up (parent chunk — move to the containing section or document), " +
+      "down (child chunks — expand into sub-sections or paragraphs), " +
+      "next (next sibling — move to the following chunk at the same level), " +
+      "previous (previous sibling — move to the preceding chunk at the same level), " +
+      "surrounding (context window — get nearby chunks for broader context). " +
+      "Pass a chunkId from pd_search results and a direction to navigate. " +
+      "Use pd_read for full metadata on any returned chunk.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chunkId: {
+          type: "string",
+          description: "The chunk ID to expand from (from pd_search or pd_expand results)",
+        },
+        direction: {
+          type: "string",
+          enum: ["up", "down", "next", "previous", "surrounding"],
+          description: "Navigation direction: up (parent), down (children), next/previous (siblings), surrounding (context window)",
+        },
+        count: {
+          type: "number",
+          description: "Number of chunks to return (optional, server default applies)",
+        },
+      },
+      required: ["chunkId", "direction"],
+    },
+  },
 ];
 
 // =============================================================================
@@ -959,6 +991,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const header = `## Progressive Disclosure Search: "${meta.query}"\n\n**Total Results:** ${meta.totalResults}`;
         const text = `${header}\n\n${formattedResults.join("\n\n")}`;
+
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "pd_expand": {
+        // Build the expand request body
+        const expandBody = { chunkId: args.chunkId, direction: args.direction };
+        if (args.count !== undefined) expandBody.count = args.count;
+
+        const expandResult = await apiRequest("POST", "/v1/pd/expand", expandBody);
+        const chunks = expandResult.data.chunks;
+
+        if (!chunks || chunks.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No chunks found in that direction.`,
+              },
+            ],
+          };
+        }
+
+        // Direction-specific labels
+        const directionLabels = {
+          up: "Parent chunk",
+          down: "Child chunks",
+          next: "Next sibling",
+          previous: "Previous sibling",
+          surrounding: "Surrounding chunks",
+        };
+
+        const label = directionLabels[args.direction] || "Chunks";
+
+        // Format each chunk, mapping _id to chunkId
+        const formattedChunks = chunks.map((chunk, i) => {
+          const chunkId = chunk._id || chunk.chunkId;
+          const lines = [
+            `### Chunk ${i + 1}`,
+            `- **chunkId:** ${chunkId}`,
+            `- **Level:** ${chunk.level}`,
+            `- **Chunk Index:** ${chunk.chunkIndex}`,
+            `- **Document:** ${chunk.documentTitle} (${chunk.documentId})`,
+          ];
+
+          if (chunk.parentChunkId) {
+            lines.push(`- **Parent:** ${chunk.parentChunkId}`);
+          }
+
+          lines.push(`- **Content:** ${chunk.content}`);
+
+          return lines.join("\n");
+        });
+
+        const header = `## ${label}\n\n**Direction:** ${args.direction} | **Results:** ${chunks.length}`;
+        const text = `${header}\n\n${formattedChunks.join("\n\n")}`;
 
         return {
           content: [{ type: "text", text }],
