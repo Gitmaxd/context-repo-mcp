@@ -1,0 +1,6 @@
+commands:
+  install: npm install
+  test: npx vitest run
+  build:mcpb: npm run build:mcpb
+
+services: {}
