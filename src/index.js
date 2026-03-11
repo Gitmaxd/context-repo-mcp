@@ -110,7 +110,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.2.0",
+    version: "1.2.1",
   },
   {
     capabilities: {
