@@ -112,16 +112,16 @@ function makeMockChunk(overrides = {}) {
 // =============================================================================
 // VAL-EXPAND-001: Tool schema registered
 // =============================================================================
-describe('pd_expand tool schema (VAL-EXPAND-001)', () => {
+describe('deep_expand tool schema (VAL-EXPAND-001)', () => {
   it('should be present in TOOLS array with correct name', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
     expect(pdExpand).toBeDefined();
   });
 
   it('should have chunkId as required string parameter', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
     expect(pdExpand.inputSchema.properties.chunkId).toBeDefined();
     expect(pdExpand.inputSchema.properties.chunkId.type).toBe('string');
     expect(pdExpand.inputSchema.required).toContain('chunkId');
@@ -129,7 +129,7 @@ describe('pd_expand tool schema (VAL-EXPAND-001)', () => {
 
   it('should have direction as required string parameter with enum', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
     expect(pdExpand.inputSchema.properties.direction).toBeDefined();
     expect(pdExpand.inputSchema.properties.direction.type).toBe('string');
     expect(pdExpand.inputSchema.properties.direction.enum).toEqual(['up', 'down', 'next', 'previous', 'surrounding']);
@@ -138,7 +138,7 @@ describe('pd_expand tool schema (VAL-EXPAND-001)', () => {
 
   it('should have count as optional number parameter', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
     expect(pdExpand.inputSchema.properties.count).toBeDefined();
     expect(pdExpand.inputSchema.properties.count.type).toBe('number');
     // count should NOT be required
@@ -151,10 +151,10 @@ describe('pd_expand tool schema (VAL-EXPAND-001)', () => {
 // =============================================================================
 // VAL-EXPAND-006: Tool description explains directions
 // =============================================================================
-describe('pd_expand tool description (VAL-EXPAND-006)', () => {
+describe('deep_expand tool description (VAL-EXPAND-006)', () => {
   it('should list all 5 directions with explanations', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
     const desc = pdExpand.description.toLowerCase();
 
     expect(desc).toMatch(/up/);
@@ -168,17 +168,17 @@ describe('pd_expand tool description (VAL-EXPAND-006)', () => {
     expect(desc).toMatch(/sibling/);
   });
 
-  it('should explain this is used after pd_search', async () => {
+  it('should explain this is used after deep_search', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
-    expect(pdExpand.description).toMatch(/pd_search/);
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
+    expect(pdExpand.description).toMatch(/deep_search/);
   });
 });
 
 // =============================================================================
 // VAL-EXPAND-002: Expand request forwarded correctly
 // =============================================================================
-describe('pd_expand request forwarding (VAL-EXPAND-002)', () => {
+describe('deep_expand request forwarding (VAL-EXPAND-002)', () => {
   it('should call POST /v1/pd/expand with chunkId, direction, and count', async () => {
     setupFetch(
       mockFetchResponse(200, {
@@ -186,7 +186,7 @@ describe('pd_expand request forwarding (VAL-EXPAND-002)', () => {
       }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_abc123', direction: 'down', count: 5 });
+    await callTool('deep_expand', { chunkId: 'chunk_abc123', direction: 'down', count: 5 });
 
     expect(fetchCalls.length).toBe(1);
     const call = fetchCalls[0];
@@ -202,7 +202,7 @@ describe('pd_expand request forwarding (VAL-EXPAND-002)', () => {
 // =============================================================================
 // VAL-EXPAND-003: All five directions handled
 // =============================================================================
-describe('pd_expand all five directions (VAL-EXPAND-003)', () => {
+describe('deep_expand all five directions (VAL-EXPAND-003)', () => {
   const directions = ['up', 'down', 'next', 'previous', 'surrounding'];
 
   for (const direction of directions) {
@@ -213,7 +213,7 @@ describe('pd_expand all five directions (VAL-EXPAND-003)', () => {
         }),
       );
 
-      await callTool('pd_expand', { chunkId: 'chunk_test', direction });
+      await callTool('deep_expand', { chunkId: 'chunk_test', direction });
 
       const body = JSON.parse(fetchCalls[0].options.body);
       expect(body.direction).toBe(direction);
@@ -224,7 +224,7 @@ describe('pd_expand all five directions (VAL-EXPAND-003)', () => {
 // =============================================================================
 // VAL-EXPAND-004: Response formatted with navigation context labels
 // =============================================================================
-describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
+describe('deep_expand response formatting per direction (VAL-EXPAND-004)', () => {
   it('should format "up" response with "Parent chunk" label', async () => {
     setupFetch(
       mockFetchResponse(200, {
@@ -234,7 +234,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_child1', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_child1', direction: 'up' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/parent chunk/i);
@@ -256,7 +256,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_parent1', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_parent1', direction: 'down' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/child chunk/i);
@@ -273,7 +273,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_current', direction: 'next' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_current', direction: 'next' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/next sibling/i);
@@ -289,7 +289,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_current', direction: 'previous' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_current', direction: 'previous' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/previous sibling/i);
@@ -309,7 +309,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_target', direction: 'surrounding' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_target', direction: 'surrounding' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/surrounding/i);
@@ -335,7 +335,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_x', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_x', direction: 'down' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_full'); // chunkId mapped from _id
@@ -351,7 +351,7 @@ describe('pd_expand response formatting per direction (VAL-EXPAND-004)', () => {
 // =============================================================================
 // VAL-EXPAND-011: Response data correctly unwrapped (data.chunks)
 // =============================================================================
-describe('pd_expand data.chunks unwrapping (VAL-EXPAND-011)', () => {
+describe('deep_expand data.chunks unwrapping (VAL-EXPAND-011)', () => {
   it('should correctly access response.data.chunks', async () => {
     setupFetch(
       mockFetchResponse(200, {
@@ -361,7 +361,7 @@ describe('pd_expand data.chunks unwrapping (VAL-EXPAND-011)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_test', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_test', direction: 'down' });
     const text = result.content[0].text;
 
     // Should show data from data.chunks, not raw JSON
@@ -373,7 +373,7 @@ describe('pd_expand data.chunks unwrapping (VAL-EXPAND-011)', () => {
 // =============================================================================
 // VAL-CROSS-003: chunkId mapped from _id in expand response
 // =============================================================================
-describe('pd_expand chunkId mapping from _id (VAL-CROSS-003)', () => {
+describe('deep_expand chunkId mapping from _id (VAL-CROSS-003)', () => {
   it('should map _id to chunkId in formatted output', async () => {
     setupFetch(
       mockFetchResponse(200, {
@@ -383,7 +383,7 @@ describe('pd_expand chunkId mapping from _id (VAL-CROSS-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_test', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_test', direction: 'down' });
     const text = result.content[0].text;
 
     // chunkId label should appear with the _id value
@@ -394,13 +394,13 @@ describe('pd_expand chunkId mapping from _id (VAL-CROSS-003)', () => {
 // =============================================================================
 // VAL-EXPAND-005: Handles chunk not found (404)
 // =============================================================================
-describe('pd_expand chunk not found (VAL-EXPAND-005)', () => {
+describe('deep_expand chunk not found (VAL-EXPAND-005)', () => {
   it('should return isError for 404 with chunk not found message', async () => {
     setupFetch(
       mockFetchResponse(404, { error: { message: 'Chunk not found' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'nonexistent_chunk', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'nonexistent_chunk', direction: 'up' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -410,13 +410,13 @@ describe('pd_expand chunk not found (VAL-EXPAND-005)', () => {
 // =============================================================================
 // VAL-EXPAND-007: Non-404 API errors propagated
 // =============================================================================
-describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
+describe('deep_expand error propagation (VAL-EXPAND-007)', () => {
   it('should return isError for 401 Unauthorized', async () => {
     setupFetch(
       mockFetchResponse(401, { error: { message: 'Unauthorized' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'up' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -427,7 +427,7 @@ describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
       mockFetchResponse(403, { error: { message: 'Forbidden' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'down' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -438,7 +438,7 @@ describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
       mockFetchResponse(429, { error: { message: 'Rate limited' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'next' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'next' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -449,7 +449,7 @@ describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
       mockFetchResponse(500, { error: { message: 'Internal error' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'previous' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'previous' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -460,7 +460,7 @@ describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
       new TypeError('fetch failed'),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'up' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -470,13 +470,13 @@ describe('pd_expand error propagation (VAL-EXPAND-007)', () => {
 // =============================================================================
 // VAL-EXPAND-008: Invalid direction string handled
 // =============================================================================
-describe('pd_expand invalid direction (VAL-EXPAND-008)', () => {
+describe('deep_expand invalid direction (VAL-EXPAND-008)', () => {
   it('should return isError for invalid direction "sideways"', async () => {
     setupFetch(
       mockFetchResponse(400, { error: { message: 'Invalid direction. Valid directions: up, down, next, previous, surrounding' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'sideways' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'sideways' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -486,13 +486,13 @@ describe('pd_expand invalid direction (VAL-EXPAND-008)', () => {
 // =============================================================================
 // VAL-EXPAND-009: Malformed chunkId returns error
 // =============================================================================
-describe('pd_expand malformed chunkId (VAL-EXPAND-009)', () => {
+describe('deep_expand malformed chunkId (VAL-EXPAND-009)', () => {
   it('should return isError for malformed chunkId', async () => {
     setupFetch(
       mockFetchResponse(400, { error: { message: 'Invalid chunkId format' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'abc123', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'abc123', direction: 'up' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -502,13 +502,13 @@ describe('pd_expand malformed chunkId (VAL-EXPAND-009)', () => {
 // =============================================================================
 // VAL-EXPAND-010: Count parameter passed through for all directions
 // =============================================================================
-describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
+describe('deep_expand count passthrough (VAL-EXPAND-010)', () => {
   it('should pass count through for direction "up"', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'up', count: 5 });
+    await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'up', count: 5 });
 
     const body = JSON.parse(fetchCalls[0].options.body);
     expect(body.count).toBe(5);
@@ -519,7 +519,7 @@ describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'down', count: 3 });
+    await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'down', count: 3 });
 
     const body = JSON.parse(fetchCalls[0].options.body);
     expect(body.count).toBe(3);
@@ -530,7 +530,7 @@ describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'next', count: 2 });
+    await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'next', count: 2 });
 
     const body = JSON.parse(fetchCalls[0].options.body);
     expect(body.count).toBe(2);
@@ -541,7 +541,7 @@ describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'surrounding', count: 10 });
+    await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'surrounding', count: 10 });
 
     const body = JSON.parse(fetchCalls[0].options.body);
     expect(body.count).toBe(10);
@@ -552,7 +552,7 @@ describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'down' });
+    await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'down' });
 
     const body = JSON.parse(fetchCalls[0].options.body);
     expect(body.count).toBeUndefined();
@@ -562,13 +562,13 @@ describe('pd_expand count passthrough (VAL-EXPAND-010)', () => {
 // =============================================================================
 // VAL-EXPAND-012: Empty results for boundary navigation
 // =============================================================================
-describe('pd_expand empty results (VAL-EXPAND-012)', () => {
+describe('deep_expand empty results (VAL-EXPAND-012)', () => {
   it('should return friendly message for empty chunks (not error)', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { chunks: [] } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_last', direction: 'next' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_last', direction: 'next' });
 
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toMatch(/no.*chunk|no.*found/i);
@@ -579,7 +579,7 @@ describe('pd_expand empty results (VAL-EXPAND-012)', () => {
       mockFetchResponse(200, { data: { chunks: [] } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_root', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_root', direction: 'up' });
 
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toMatch(/no.*chunk|no.*found/i);
@@ -587,15 +587,15 @@ describe('pd_expand empty results (VAL-EXPAND-012)', () => {
 });
 
 // =============================================================================
-// MCP response envelope consistency for pd_expand (VAL-CROSS-004)
+// MCP response envelope consistency for deep_expand (VAL-CROSS-004)
 // =============================================================================
-describe('pd_expand MCP response envelope (VAL-CROSS-004)', () => {
+describe('deep_expand MCP response envelope (VAL-CROSS-004)', () => {
   it('should return success response with correct envelope shape', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { chunks: [makeMockChunk()] } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'down' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);
@@ -610,7 +610,7 @@ describe('pd_expand MCP response envelope (VAL-CROSS-004)', () => {
       mockFetchResponse(404, { error: { message: 'Not found' } }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_1', direction: 'up' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_1', direction: 'up' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);

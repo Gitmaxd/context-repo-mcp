@@ -126,17 +126,17 @@ function makeMockReadResponse(overrides = {}) {
 // VAL-READ-001: Tool schema registered
 // =============================================================================
 
-describe('pd_read tool schema (VAL-READ-001)', () => {
+describe('deep_read tool schema (VAL-READ-001)', () => {
   it('should be present in TOOLS array with correct name', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
     expect(tool).toBeDefined();
-    expect(tool.name).toBe('pd_read');
+    expect(tool.name).toBe('deep_read');
   });
 
   it('should have chunkId as required string parameter', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
     expect(tool.inputSchema.properties.chunkId).toBeDefined();
     expect(tool.inputSchema.properties.chunkId.type).toBe('string');
     expect(tool.inputSchema.required).toContain('chunkId');
@@ -144,7 +144,7 @@ describe('pd_read tool schema (VAL-READ-001)', () => {
 
   it('should have only chunkId as a parameter', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
     const propNames = Object.keys(tool.inputSchema.properties);
     expect(propNames).toEqual(['chunkId']);
   });
@@ -154,12 +154,12 @@ describe('pd_read tool schema (VAL-READ-001)', () => {
 // VAL-READ-002: Read request forwarded correctly
 // =============================================================================
 
-describe('pd_read request forwarding (VAL-READ-002)', () => {
+describe('deep_read request forwarding (VAL-READ-002)', () => {
   it('should call GET /v1/pd/read/<chunkId> with chunkId in URL path', async () => {
     const mockChunk = makeMockReadResponse();
     setupFetch(mockFetchResponse(200, { data: mockChunk }));
 
-    await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(fetchCalls).toHaveLength(1);
     expect(fetchCalls[0].url).toContain('/v1/pd/read/chunk_abc123');
@@ -170,7 +170,7 @@ describe('pd_read request forwarding (VAL-READ-002)', () => {
     const mockChunk = makeMockReadResponse();
     setupFetch(mockFetchResponse(200, { data: mockChunk }));
 
-    await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(fetchCalls[0].options.body).toBeUndefined();
   });
@@ -179,7 +179,7 @@ describe('pd_read request forwarding (VAL-READ-002)', () => {
     const mockChunk = makeMockReadResponse({ chunkId: 'k17ej3g6cxj2r7gqbz3tpxpjxh7b06ey' });
     setupFetch(mockFetchResponse(200, { data: mockChunk }));
 
-    await callTool('pd_read', { chunkId: 'k17ej3g6cxj2r7gqbz3tpxpjxh7b06ey' });
+    await callTool('deep_read', { chunkId: 'k17ej3g6cxj2r7gqbz3tpxpjxh7b06ey' });
 
     expect(fetchCalls[0].url).toContain('/v1/pd/read/k17ej3g6cxj2r7gqbz3tpxpjxh7b06ey');
   });
@@ -189,11 +189,11 @@ describe('pd_read request forwarding (VAL-READ-002)', () => {
 // VAL-READ-003: Response includes full hierarchy metadata
 // =============================================================================
 
-describe('pd_read response formatting (VAL-READ-003)', () => {
+describe('deep_read response formatting (VAL-READ-003)', () => {
   it('should include chunkId in response', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_abc123');
@@ -203,7 +203,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
     const longContent = 'A'.repeat(500);
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse({ content: longContent }) }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain(longContent);
@@ -212,7 +212,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include level', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('section');
@@ -221,7 +221,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.documentId', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('doc_xyz789');
@@ -230,7 +230,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.documentTitle', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('Test Document');
@@ -239,7 +239,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.sectionPath', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('Chapter 1 > Section 1.2');
@@ -248,7 +248,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.position.chunkIndex', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('3');
@@ -257,7 +257,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.position.parentChunkId', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_parent001');
@@ -266,7 +266,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.position.prevSiblingId', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_prev001');
@@ -275,7 +275,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include hierarchy.position.nextSiblingId', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_next001');
@@ -284,7 +284,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include metadata.wordCount', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('42');
@@ -293,7 +293,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include metadata.startIndex', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('100');
@@ -302,7 +302,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include metadata.endIndex', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('350');
@@ -311,7 +311,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include metadata.headingText when present', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).toContain('Section 1.2: Overview');
@@ -327,7 +327,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
     });
     setupFetch(mockFetchResponse(200, { data: chunkWithoutHeading }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).not.toContain('Heading');
@@ -336,10 +336,10 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
   it('should include navigation hints', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
-    expect(text).toContain('pd_expand');
+    expect(text).toContain('deep_expand');
     expect(text).toContain('chunkId');
   });
 
@@ -359,7 +359,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
     });
     setupFetch(mockFetchResponse(200, { data: chunk }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).not.toContain('Parent Chunk');
@@ -381,7 +381,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
     });
     setupFetch(mockFetchResponse(200, { data: chunk }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).not.toContain('Prev Sibling');
@@ -403,7 +403,7 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
     });
     setupFetch(mockFetchResponse(200, { data: chunk }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
     const text = result.content[0].text;
 
     expect(text).not.toContain('Next Sibling');
@@ -414,11 +414,11 @@ describe('pd_read response formatting (VAL-READ-003)', () => {
 // VAL-READ-004: Handles chunk not found (404)
 // =============================================================================
 
-describe('pd_read chunk not found (VAL-READ-004)', () => {
+describe('deep_read chunk not found (VAL-READ-004)', () => {
   it('should return isError when chunk is not found (404)', async () => {
     setupFetch(mockFetchResponse(404, { error: { message: 'Chunk not found' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'nonexistent_chunk' });
+    const result = await callTool('deep_read', { chunkId: 'nonexistent_chunk' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -429,33 +429,33 @@ describe('pd_read chunk not found (VAL-READ-004)', () => {
 // VAL-READ-005: Tool description explains deep inspection use case
 // =============================================================================
 
-describe('pd_read tool description (VAL-READ-005)', () => {
+describe('deep_read tool description (VAL-READ-005)', () => {
   it('should explain deep inspection use case', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
     const desc = tool.description.toLowerCase();
 
     expect(desc).toContain('chunk');
     expect(desc).toContain('metadata');
   });
 
-  it('should reference pd_search', async () => {
+  it('should reference deep_search', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
 
-    expect(tool.description).toContain('pd_search');
+    expect(tool.description).toContain('deep_search');
   });
 
-  it('should reference pd_expand', async () => {
+  it('should reference deep_expand', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
 
-    expect(tool.description).toContain('pd_expand');
+    expect(tool.description).toContain('deep_expand');
   });
 
   it('should explain it returns hierarchy/position metadata', async () => {
     const result = await listToolsHandler();
-    const tool = result.tools.find((t) => t.name === 'pd_read');
+    const tool = result.tools.find((t) => t.name === 'deep_read');
     const desc = tool.description.toLowerCase();
 
     expect(desc).toContain('sectionpath');
@@ -467,11 +467,11 @@ describe('pd_read tool description (VAL-READ-005)', () => {
 // VAL-READ-006: Non-404 API errors propagated
 // =============================================================================
 
-describe('pd_read API error propagation (VAL-READ-006)', () => {
+describe('deep_read API error propagation (VAL-READ-006)', () => {
   it('should return isError for 401 Unauthorized', async () => {
     setupFetch(mockFetchResponse(401, { error: { message: 'Unauthorized' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -480,7 +480,7 @@ describe('pd_read API error propagation (VAL-READ-006)', () => {
   it('should return isError for 403 Forbidden', async () => {
     setupFetch(mockFetchResponse(403, { error: { message: 'Forbidden' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -489,7 +489,7 @@ describe('pd_read API error propagation (VAL-READ-006)', () => {
   it('should return isError for 429 Rate Limit', async () => {
     setupFetch(mockFetchResponse(429, { error: { message: 'Rate limited' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -498,7 +498,7 @@ describe('pd_read API error propagation (VAL-READ-006)', () => {
   it('should return isError for 500 Server Error', async () => {
     setupFetch(mockFetchResponse(500, { error: { message: 'Internal Server Error' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -509,11 +509,11 @@ describe('pd_read API error propagation (VAL-READ-006)', () => {
 // VAL-READ-007: Malformed chunkId returns error
 // =============================================================================
 
-describe('pd_read malformed chunkId (VAL-READ-007)', () => {
+describe('deep_read malformed chunkId (VAL-READ-007)', () => {
   it('should return isError for malformed chunkId (API returns 400)', async () => {
     setupFetch(mockFetchResponse(400, { error: { message: 'Invalid chunk ID format' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'abc123' });
+    const result = await callTool('deep_read', { chunkId: 'abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -522,21 +522,21 @@ describe('pd_read malformed chunkId (VAL-READ-007)', () => {
   it('should return isError for empty chunkId (API returns 400)', async () => {
     setupFetch(mockFetchResponse(400, { error: { message: 'chunkId is required' } }));
 
-    const result = await callTool('pd_read', { chunkId: '' });
+    const result = await callTool('deep_read', { chunkId: '' });
 
     expect(result.isError).toBe(true);
   });
 });
 
 // =============================================================================
-// VAL-SESSION-007: pd_read never triggers session creation
+// VAL-SESSION-007: deep_read never triggers session creation
 // =============================================================================
 
-describe('pd_read session scoping (VAL-SESSION-007)', () => {
+describe('deep_read session scoping (VAL-SESSION-007)', () => {
   it('should NOT call /v1/pd/session endpoint', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     // Only one fetch call — the read request itself, no session creation
     expect(fetchCalls).toHaveLength(1);
@@ -547,7 +547,7 @@ describe('pd_read session scoping (VAL-SESSION-007)', () => {
   it('should NOT include sessionId in any request', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     // GET request should have no body
     expect(fetchCalls[0].options.body).toBeUndefined();
@@ -558,11 +558,11 @@ describe('pd_read session scoping (VAL-SESSION-007)', () => {
 // VAL-CROSS-004: MCP response envelope consistency
 // =============================================================================
 
-describe('pd_read MCP response envelope (VAL-CROSS-004)', () => {
+describe('deep_read MCP response envelope (VAL-CROSS-004)', () => {
   it('should return success response with correct envelope shape', async () => {
     setupFetch(mockFetchResponse(200, { data: makeMockReadResponse() }));
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);
@@ -575,7 +575,7 @@ describe('pd_read MCP response envelope (VAL-CROSS-004)', () => {
   it('should return error response with correct envelope shape', async () => {
     setupFetch(mockFetchResponse(404, { error: { message: 'Not found' } }));
 
-    const result = await callTool('pd_read', { chunkId: 'nonexistent' });
+    const result = await callTool('deep_read', { chunkId: 'nonexistent' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);
@@ -590,12 +590,12 @@ describe('pd_read MCP response envelope (VAL-CROSS-004)', () => {
 // VAL-CROSS-005: Network errors produce tool errors
 // =============================================================================
 
-describe('pd_read network error handling (VAL-CROSS-005)', () => {
+describe('deep_read network error handling (VAL-CROSS-005)', () => {
   it('should return isError for network errors (fetch TypeError)', async () => {
     const networkError = new TypeError('fetch failed');
     setupFetch(networkError);
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
@@ -605,7 +605,7 @@ describe('pd_read network error handling (VAL-CROSS-005)', () => {
     const networkError = new TypeError('fetch failed');
     setupFetch(networkError);
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_abc123' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_abc123' });
 
     expect(result.content[0].text.toLowerCase()).toContain('network');
   });

@@ -262,19 +262,19 @@ Once connected, your MCP client can use these tools:
 
 | Tool | Description |
 |------|-------------|
-| `search_context_repo` | Semantic search across all prompts, documents, and collections |
+| `find_items` | Semantic search across all prompts, documents, and collections |
 
 ### Progressive Disclosure
 
 | Tool | Description |
 |------|-------------|
-| `pd_search` | Search with hierarchical chunk results and auto-session deduplication |
-| `pd_expand` | Navigate document hierarchy in 5 directions (up, down, next, previous, surrounding) |
-| `pd_read` | Get a single chunk with full hierarchy metadata |
+| `deep_search` | Search with hierarchical chunk results and auto-session deduplication |
+| `deep_expand` | Navigate document hierarchy in 5 directions (up, down, next, previous, surrounding) |
+| `deep_read` | Get a single chunk with full hierarchy metadata |
 
 ## Semantic Search
 
-The `search_context_repo` tool enables natural language search across your entire Context Repo. Instead of requiring exact keyword matches, it understands the meaning of your query.
+The `find_items` tool enables natural language search across your entire Context Repo. Instead of requiring exact keyword matches, it understands the meaning of your query.
 
 ### How It Works
 
@@ -334,7 +334,7 @@ Results are filtered by relevance score (0.0 to 1.0):
 
 ## Progressive Disclosure Search
 
-The `pd_search`, `pd_expand`, and `pd_read` tools enable hierarchical document exploration. Instead of returning whole documents, progressive disclosure returns the most specific matching chunk (paragraph, section, or document level) and lets you navigate the hierarchy around it.
+The `deep_search`, `deep_expand`, and `deep_read` tools enable hierarchical document exploration. Instead of returning whole documents, progressive disclosure returns the most specific matching chunk (paragraph, section, or document level) and lets you navigate the hierarchy around it.
 
 ### How It Works
 
@@ -351,11 +351,11 @@ Document → Section → Paragraph
 
 ### The Three-Tool Workflow
 
-- **Step 1: `pd_search`** — Find relevant chunks matching your query
-- **Step 2: `pd_expand`** — Navigate to related content (parent sections, child paragraphs, siblings)
-- **Step 3: `pd_read`** — Get full details and metadata on a specific chunk
+- **Step 1: `deep_search`** — Find relevant chunks matching your query
+- **Step 2: `deep_expand`** — Navigate to related content (parent sections, child paragraphs, siblings)
+- **Step 3: `deep_read`** — Get full details and metadata on a specific chunk
 
-### `pd_search` Parameters
+### `deep_search` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -365,19 +365,19 @@ Document → Section → Paragraph
 | `collectionId` | string | No | - | Filter results to a specific collection |
 | `documentId` | string | No | - | Filter results to a specific document |
 
-### `pd_expand` Parameters
+### `deep_expand` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `chunkId` | string | Yes | - | The chunk ID to expand from (from `pd_search` or `pd_expand` results) |
+| `chunkId` | string | Yes | - | The chunk ID to expand from (from `deep_search` or `deep_expand` results) |
 | `direction` | string | Yes | - | Navigation direction: `up`, `down`, `next`, `previous`, or `surrounding` |
 | `count` | number | No | server default | Number of chunks to return |
 
-### `pd_read` Parameters
+### `deep_read` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `chunkId` | string | Yes | - | The chunk ID to read (from `pd_search` or `pd_expand` results) |
+| `chunkId` | string | Yes | - | The chunk ID to read (from `deep_search` or `deep_expand` results) |
 
 ### Direction Reference
 
@@ -391,15 +391,15 @@ Document → Section → Paragraph
 
 ### Auto-Session Deduplication
 
-`pd_search` automatically creates a session on the first call. Subsequent searches within the same connection exclude previously returned chunks, enabling iterative refinement without seeing duplicate results. Providing an explicit `sessionId` overrides the auto-session behavior.
+`deep_search` automatically creates a session on the first call. Subsequent searches within the same connection exclude previously returned chunks, enabling iterative refinement without seeing duplicate results. Providing an explicit `sessionId` overrides the auto-session behavior.
 
-### Difference from `search_context_repo`
+### Difference from `find_items`
 
-| | `search_context_repo` | `pd_search` |
+| | `find_items` | `deep_search` |
 |---|---|---|
 | **Results** | Flat matches across prompts, documents, and collections | Hierarchical chunk results within documents |
 | **Best for** | Finding which document contains something | Finding the exact paragraph or section and navigating around it |
-| **Navigation** | None — returns top-level matches | Full hierarchy navigation via `pd_expand` |
+| **Navigation** | None — returns top-level matches | Full hierarchy navigation via `deep_expand` |
 
 ### Example Queries
 
@@ -422,9 +422,9 @@ Document → Section → Paragraph
 
 ### Tips for Best Results
 
-1. **Start with `pd_search`** then use `pd_expand` to navigate the hierarchy
+1. **Start with `deep_search`** then use `deep_expand` to navigate the hierarchy
 2. **Use sessions for iterative refinement** — auto-created by default, so repeated searches automatically skip already-seen chunks
-3. **Use `pd_read` when you need full metadata** — section path, word count, heading text, and navigation IDs
+3. **Use `deep_read` when you need full metadata** — section path, word count, heading text, and navigation IDs
 4. **Filter by `collectionId` or `documentId`** to narrow scope before searching
 
 ## Example Usage

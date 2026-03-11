@@ -98,16 +98,16 @@ function setupFetch(...responses) {
 // =============================================================================
 // VAL-SEARCH-001: Tool schema registered
 // =============================================================================
-describe('pd_search tool schema (VAL-SEARCH-001)', () => {
+describe('deep_search tool schema (VAL-SEARCH-001)', () => {
   it('should be present in TOOLS array with correct name', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch).toBeDefined();
   });
 
   it('should have query as required string parameter', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.inputSchema.properties.query).toBeDefined();
     expect(pdSearch.inputSchema.properties.query.type).toBe('string');
     expect(pdSearch.inputSchema.required).toContain('query');
@@ -115,7 +115,7 @@ describe('pd_search tool schema (VAL-SEARCH-001)', () => {
 
   it('should have limit as optional number parameter', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.inputSchema.properties.limit).toBeDefined();
     expect(pdSearch.inputSchema.properties.limit.type).toBe('number');
     // limit should NOT be required
@@ -126,21 +126,21 @@ describe('pd_search tool schema (VAL-SEARCH-001)', () => {
 
   it('should have sessionId as optional string parameter', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.inputSchema.properties.sessionId).toBeDefined();
     expect(pdSearch.inputSchema.properties.sessionId.type).toBe('string');
   });
 
   it('should have collectionId as optional string parameter', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.inputSchema.properties.collectionId).toBeDefined();
     expect(pdSearch.inputSchema.properties.collectionId.type).toBe('string');
   });
 
   it('should have documentId as optional string parameter', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.inputSchema.properties.documentId).toBeDefined();
     expect(pdSearch.inputSchema.properties.documentId.type).toBe('string');
   });
@@ -149,31 +149,31 @@ describe('pd_search tool schema (VAL-SEARCH-001)', () => {
 // =============================================================================
 // VAL-SEARCH-006: Tool description is agent-discoverable
 // =============================================================================
-describe('pd_search tool description (VAL-SEARCH-006)', () => {
+describe('deep_search tool description (VAL-SEARCH-006)', () => {
   it('should explain what the tool does (vector search)', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
     expect(pdSearch.description.toLowerCase()).toMatch(/search/);
   });
 
-  it('should differentiate from search_context_repo', async () => {
+  it('should differentiate from find_items', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
-    expect(pdSearch.description).toMatch(/search_context_repo|hierarchi|chunk|progressive/i);
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
+    expect(pdSearch.description).toMatch(/find_items|hierarchi|chunk|progressive/i);
   });
 
-  it('should reference pd_expand and pd_read', async () => {
+  it('should reference deep_expand and deep_read', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
-    expect(pdSearch.description).toMatch(/pd_expand/);
-    expect(pdSearch.description).toMatch(/pd_read/);
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
+    expect(pdSearch.description).toMatch(/deep_expand/);
+    expect(pdSearch.description).toMatch(/deep_read/);
   });
 });
 
 // =============================================================================
 // VAL-SEARCH-002: Search request forwarded correctly
 // =============================================================================
-describe('pd_search request forwarding (VAL-SEARCH-002)', () => {
+describe('deep_search request forwarding (VAL-SEARCH-002)', () => {
   it('should call POST /v1/pd/search with query', async () => {
     // Session creation + search
     setupFetch(
@@ -181,7 +181,7 @@ describe('pd_search request forwarding (VAL-SEARCH-002)', () => {
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test query' });
+    await callTool('deep_search', { query: 'test query' });
 
     // Second call is the search (first is session creation)
     const searchCall = fetchCalls[1];
@@ -197,7 +197,7 @@ describe('pd_search request forwarding (VAL-SEARCH-002)', () => {
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test', collectionId: 'col_123' });
+    await callTool('deep_search', { query: 'test', collectionId: 'col_123' });
 
     const searchCall = fetchCalls[1];
     const body = JSON.parse(searchCall.options.body);
@@ -210,7 +210,7 @@ describe('pd_search request forwarding (VAL-SEARCH-002)', () => {
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test', documentId: 'doc_456' });
+    await callTool('deep_search', { query: 'test', documentId: 'doc_456' });
 
     const searchCall = fetchCalls[1];
     const body = JSON.parse(searchCall.options.body);
@@ -221,14 +221,14 @@ describe('pd_search request forwarding (VAL-SEARCH-002)', () => {
 // =============================================================================
 // VAL-SEARCH-009: Limit parameter passthrough
 // =============================================================================
-describe('pd_search limit parameter (VAL-SEARCH-009)', () => {
+describe('deep_search limit parameter (VAL-SEARCH-009)', () => {
   it('should pass limit to API when provided', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test', limit: 5 });
+    await callTool('deep_search', { query: 'test', limit: 5 });
 
     const searchCall = fetchCalls[1];
     const body = JSON.parse(searchCall.options.body);
@@ -241,7 +241,7 @@ describe('pd_search limit parameter (VAL-SEARCH-009)', () => {
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test' });
+    await callTool('deep_search', { query: 'test' });
 
     const searchCall = fetchCalls[1];
     const body = JSON.parse(searchCall.options.body);
@@ -252,7 +252,7 @@ describe('pd_search limit parameter (VAL-SEARCH-009)', () => {
 // =============================================================================
 // VAL-SEARCH-003: Response formatted with hierarchy metadata
 // =============================================================================
-describe('pd_search response formatting (VAL-SEARCH-003)', () => {
+describe('deep_search response formatting (VAL-SEARCH-003)', () => {
   it('should format response with all hierarchy fields', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
@@ -275,7 +275,7 @@ describe('pd_search response formatting (VAL-SEARCH-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
     const text = result.content[0].text;
 
     expect(text).toContain('chunk_abc123');
@@ -312,7 +312,7 @@ describe('pd_search response formatting (VAL-SEARCH-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'my search' });
+    const result = await callTool('deep_search', { query: 'my search' });
     const text = result.content[0].text;
 
     expect(text).toContain('my search');
@@ -323,7 +323,7 @@ describe('pd_search response formatting (VAL-SEARCH-003)', () => {
 // =============================================================================
 // VAL-SEARCH-008: Response data correctly unwrapped
 // =============================================================================
-describe('pd_search data unwrapping (VAL-SEARCH-008)', () => {
+describe('deep_search data unwrapping (VAL-SEARCH-008)', () => {
   it('should access response.data.results and response.data.meta', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
@@ -346,7 +346,7 @@ describe('pd_search data unwrapping (VAL-SEARCH-008)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'unwrap' });
+    const result = await callTool('deep_search', { query: 'unwrap' });
     const text = result.content[0].text;
 
     // Should show the data from data.results, not raw JSON
@@ -359,7 +359,7 @@ describe('pd_search data unwrapping (VAL-SEARCH-008)', () => {
 // =============================================================================
 // VAL-SEARCH-004: Handles empty results
 // =============================================================================
-describe('pd_search empty results (VAL-SEARCH-004)', () => {
+describe('deep_search empty results (VAL-SEARCH-004)', () => {
   it('should return friendly message when no results found', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
@@ -371,7 +371,7 @@ describe('pd_search empty results (VAL-SEARCH-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'nonexistent' });
+    const result = await callTool('deep_search', { query: 'nonexistent' });
 
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toMatch(/no.*match|no.*result|0 result/i);
@@ -381,14 +381,14 @@ describe('pd_search empty results (VAL-SEARCH-004)', () => {
 // =============================================================================
 // VAL-SEARCH-005: API errors propagated as tool errors
 // =============================================================================
-describe('pd_search error propagation (VAL-SEARCH-005)', () => {
+describe('deep_search error propagation (VAL-SEARCH-005)', () => {
   it('should return isError for 401 Unauthorized', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(401, { error: { message: 'Unauthorized' } }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -400,7 +400,7 @@ describe('pd_search error propagation (VAL-SEARCH-005)', () => {
       mockFetchResponse(403, { error: { message: 'Forbidden' } }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -412,7 +412,7 @@ describe('pd_search error propagation (VAL-SEARCH-005)', () => {
       mockFetchResponse(429, { error: { message: 'Rate limited' } }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -424,7 +424,7 @@ describe('pd_search error propagation (VAL-SEARCH-005)', () => {
       mockFetchResponse(500, { error: { message: 'Internal error' } }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -436,7 +436,7 @@ describe('pd_search error propagation (VAL-SEARCH-005)', () => {
       new TypeError('fetch failed'),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -446,14 +446,14 @@ describe('pd_search error propagation (VAL-SEARCH-005)', () => {
 // =============================================================================
 // VAL-SEARCH-007: Empty or whitespace query returns error
 // =============================================================================
-describe('pd_search empty/whitespace query (VAL-SEARCH-007)', () => {
+describe('deep_search empty/whitespace query (VAL-SEARCH-007)', () => {
   it('should return isError for empty query string', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(400, { error: { message: 'Query is required' } }),
     );
 
-    const result = await callTool('pd_search', { query: '' });
+    const result = await callTool('deep_search', { query: '' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -465,7 +465,7 @@ describe('pd_search empty/whitespace query (VAL-SEARCH-007)', () => {
       mockFetchResponse(400, { error: { message: 'Query is required' } }),
     );
 
-    const result = await callTool('pd_search', { query: '   ' });
+    const result = await callTool('deep_search', { query: '   ' });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/error/i);
@@ -475,14 +475,14 @@ describe('pd_search empty/whitespace query (VAL-SEARCH-007)', () => {
 // =============================================================================
 // VAL-SESSION-001: Auto-creates session on first search
 // =============================================================================
-describe('pd_search auto-session creation (VAL-SESSION-001)', () => {
+describe('deep_search auto-session creation (VAL-SESSION-001)', () => {
   it('should call POST /v1/pd/session first when no sessionId provided', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'auto_sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test' });
+    await callTool('deep_search', { query: 'test' });
 
     expect(fetchCalls.length).toBe(2);
     // First call: session creation
@@ -498,7 +498,7 @@ describe('pd_search auto-session creation (VAL-SESSION-001)', () => {
 // =============================================================================
 // VAL-SESSION-002: Reuses auto-session for subsequent searches
 // =============================================================================
-describe('pd_search auto-session reuse (VAL-SESSION-002)', () => {
+describe('deep_search auto-session reuse (VAL-SESSION-002)', () => {
   it('should reuse session on second call without creating new one', async () => {
     // First call: session creation + search
     setupFetch(
@@ -509,11 +509,11 @@ describe('pd_search auto-session reuse (VAL-SESSION-002)', () => {
     );
 
     // First search - creates session
-    await callTool('pd_search', { query: 'first' });
+    await callTool('deep_search', { query: 'first' });
     expect(fetchCalls.length).toBe(2); // session + search
 
     // Second search - reuses session
-    await callTool('pd_search', { query: 'second' });
+    await callTool('deep_search', { query: 'second' });
     expect(fetchCalls.length).toBe(3); // only one more call (search, no session)
 
     // Verify second search used the session
@@ -525,13 +525,13 @@ describe('pd_search auto-session reuse (VAL-SESSION-002)', () => {
 // =============================================================================
 // VAL-SESSION-003: Explicit sessionId overrides auto-session
 // =============================================================================
-describe('pd_search explicit sessionId override (VAL-SESSION-003)', () => {
+describe('deep_search explicit sessionId override (VAL-SESSION-003)', () => {
   it('should use explicit sessionId and not create auto-session', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { results: [], meta: { query: 'test', totalResults: 0 } } }),
     );
 
-    await callTool('pd_search', { query: 'test', sessionId: 'explicit_sess_99' });
+    await callTool('deep_search', { query: 'test', sessionId: 'explicit_sess_99' });
 
     // Only one call (search), no session creation
     expect(fetchCalls.length).toBe(1);
@@ -544,7 +544,7 @@ describe('pd_search explicit sessionId override (VAL-SESSION-003)', () => {
 // =============================================================================
 // VAL-SESSION-005: Session creation failure does not block search
 // =============================================================================
-describe('pd_search session creation failure (VAL-SESSION-005)', () => {
+describe('deep_search session creation failure (VAL-SESSION-005)', () => {
   it('should still execute search when session creation fails with 500', async () => {
     setupFetch(
       mockFetchResponse(500, { error: { message: 'Session service down' } }),
@@ -567,7 +567,7 @@ describe('pd_search session creation failure (VAL-SESSION-005)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     // Should not be an error - search succeeded
     expect(result.isError).toBeFalsy();
@@ -588,7 +588,7 @@ describe('pd_search session creation failure (VAL-SESSION-005)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBeFalsy();
     expect(fetchCalls.length).toBe(2);
@@ -605,7 +605,7 @@ describe('pd_search session creation failure (VAL-SESSION-005)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.isError).toBeFalsy();
     expect(fetchCalls.length).toBe(2);
@@ -615,7 +615,7 @@ describe('pd_search session creation failure (VAL-SESSION-005)', () => {
 // =============================================================================
 // VAL-CROSS-004: MCP response envelope consistency
 // =============================================================================
-describe('pd_search MCP response envelope (VAL-CROSS-004)', () => {
+describe('deep_search MCP response envelope (VAL-CROSS-004)', () => {
   it('should return success response with correct envelope shape', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
@@ -638,7 +638,7 @@ describe('pd_search MCP response envelope (VAL-CROSS-004)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);
@@ -654,7 +654,7 @@ describe('pd_search MCP response envelope (VAL-CROSS-004)', () => {
       mockFetchResponse(401, { error: { message: 'Unauthorized' } }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
 
     expect(result.content).toBeDefined();
     expect(Array.isArray(result.content)).toBe(true);

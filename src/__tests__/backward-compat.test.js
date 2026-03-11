@@ -115,10 +115,10 @@ const ORIGINAL_TOOL_NAMES = [
   'delete_document',
   'get_document_versions',
   'restore_document_version',
-  'search_context_repo',
+  'find_items',
 ];
 
-const NEW_PD_TOOL_NAMES = ['pd_search', 'pd_expand', 'pd_read'];
+const NEW_DEEP_TOOL_NAMES = ['deep_search', 'deep_expand', 'deep_read'];
 
 // =============================================================================
 // VAL-COMPAT-001: All existing tools still registered + total count = 25
@@ -142,7 +142,7 @@ describe('Backward compatibility — tool registration (VAL-COMPAT-001)', () => 
     const result = await listToolsHandler();
     const toolNames = result.tools.map(t => t.name);
 
-    for (const name of NEW_PD_TOOL_NAMES) {
+    for (const name of NEW_DEEP_TOOL_NAMES) {
       expect(toolNames).toContain(name);
     }
   });
@@ -159,8 +159,8 @@ describe('Backward compatibility — tool registration (VAL-COMPAT-001)', () => 
 // VAL-CROSS-001: chunkIds from search usable by expand and read
 // =============================================================================
 describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
-  it('should allow chunkId from pd_search to be passed to pd_expand', async () => {
-    // Mock pd_search returning a chunkId
+  it('should allow chunkId from deep_search to be passed to deep_expand', async () => {
+    // Mock deep_search returning a chunkId
     setupFetch(
       // Session creation
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
@@ -184,13 +184,13 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
       }),
     );
 
-    const searchResult = await callTool('pd_search', { query: 'test' });
+    const searchResult = await callTool('deep_search', { query: 'test' });
     const searchText = searchResult.content[0].text;
 
     // Extract the chunkId from search response
     expect(searchText).toContain('chunk_from_search_abc');
 
-    // Now use that chunkId in pd_expand
+    // Now use that chunkId in deep_expand
     setupFetch(
       mockFetchResponse(200, {
         data: {
@@ -209,7 +209,7 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
       }),
     );
 
-    const expandResult = await callTool('pd_expand', { chunkId: 'chunk_from_search_abc', direction: 'down' });
+    const expandResult = await callTool('deep_expand', { chunkId: 'chunk_from_search_abc', direction: 'down' });
 
     // Should succeed (not an error)
     expect(expandResult.isError).toBeFalsy();
@@ -220,8 +220,8 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
     expect(expandBody.chunkId).toBe('chunk_from_search_abc');
   });
 
-  it('should allow chunkId from pd_search to be passed to pd_read', async () => {
-    // Mock pd_search returning a chunkId
+  it('should allow chunkId from deep_search to be passed to deep_read', async () => {
+    // Mock deep_search returning a chunkId
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(200, {
@@ -243,10 +243,10 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
       }),
     );
 
-    const searchResult = await callTool('pd_search', { query: 'read test' });
+    const searchResult = await callTool('deep_search', { query: 'read test' });
     expect(searchResult.content[0].text).toContain('chunk_read_target');
 
-    // Now use that chunkId in pd_read
+    // Now use that chunkId in deep_read
     setupFetch(
       mockFetchResponse(200, {
         data: {
@@ -273,7 +273,7 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
       }),
     );
 
-    const readResult = await callTool('pd_read', { chunkId: 'chunk_read_target' });
+    const readResult = await callTool('deep_read', { chunkId: 'chunk_read_target' });
 
     expect(readResult.isError).toBeFalsy();
     expect(readResult.content[0].text).toContain('chunk_read_target');
@@ -288,45 +288,45 @@ describe('Cross-tool chunkId flow (VAL-CROSS-001)', () => {
 // VAL-CROSS-002: Tool descriptions form discoverable workflow
 // =============================================================================
 describe('Discoverable workflow via tool descriptions (VAL-CROSS-002)', () => {
-  it('pd_search description references pd_expand and pd_read', async () => {
+  it('deep_search description references deep_expand and deep_read', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
 
-    expect(pdSearch.description).toContain('pd_expand');
-    expect(pdSearch.description).toContain('pd_read');
+    expect(pdSearch.description).toContain('deep_expand');
+    expect(pdSearch.description).toContain('deep_read');
   });
 
-  it('pd_expand description references pd_search and pd_read', async () => {
+  it('deep_expand description references deep_search and deep_read', async () => {
     const result = await listToolsHandler();
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
 
-    expect(pdExpand.description).toContain('pd_search');
-    expect(pdExpand.description).toContain('pd_read');
+    expect(pdExpand.description).toContain('deep_search');
+    expect(pdExpand.description).toContain('deep_read');
   });
 
-  it('pd_read description references pd_search and pd_expand', async () => {
+  it('deep_read description references deep_search and deep_expand', async () => {
     const result = await listToolsHandler();
-    const pdRead = result.tools.find(t => t.name === 'pd_read');
+    const pdRead = result.tools.find(t => t.name === 'deep_read');
 
-    expect(pdRead.description).toContain('pd_search');
-    expect(pdRead.description).toContain('pd_expand');
+    expect(pdRead.description).toContain('deep_search');
+    expect(pdRead.description).toContain('deep_expand');
   });
 
   it('all three PD tools describe a coherent workflow (search → expand → read)', async () => {
     const result = await listToolsHandler();
-    const pdSearch = result.tools.find(t => t.name === 'pd_search');
-    const pdExpand = result.tools.find(t => t.name === 'pd_expand');
-    const pdRead = result.tools.find(t => t.name === 'pd_read');
+    const pdSearch = result.tools.find(t => t.name === 'deep_search');
+    const pdExpand = result.tools.find(t => t.name === 'deep_expand');
+    const pdRead = result.tools.find(t => t.name === 'deep_read');
 
-    // pd_search mentions it's the entry point
-    expect(pdSearch.description.toLowerCase()).toMatch(/entry.*point|start/i);
+    // deep_search positions itself as the search entry point for document content
+    expect(pdSearch.description.toLowerCase()).toMatch(/search.*document.*content|entry.*point|start/i);
 
-    // pd_expand mentions it's used after pd_search
-    expect(pdExpand.description).toContain('pd_search');
+    // deep_expand mentions it's used after deep_search
+    expect(pdExpand.description).toContain('deep_search');
 
-    // pd_read mentions it's used after pd_search or pd_expand
-    expect(pdRead.description).toContain('pd_search');
-    expect(pdRead.description).toContain('pd_expand');
+    // deep_read mentions it's used after deep_search or deep_expand
+    expect(pdRead.description).toContain('deep_search');
+    expect(pdRead.description).toContain('deep_expand');
   });
 });
 
@@ -334,7 +334,7 @@ describe('Discoverable workflow via tool descriptions (VAL-CROSS-002)', () => {
 // VAL-CROSS-003: Consistent chunkId naming across all PD tools
 // =============================================================================
 describe('Consistent chunkId naming across PD tools (VAL-CROSS-003)', () => {
-  it('pd_expand maps _id to chunkId in formatted output', async () => {
+  it('deep_expand maps _id to chunkId in formatted output', async () => {
     setupFetch(
       mockFetchResponse(200, {
         data: {
@@ -353,7 +353,7 @@ describe('Consistent chunkId naming across PD tools (VAL-CROSS-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_expand', { chunkId: 'chunk_test', direction: 'down' });
+    const result = await callTool('deep_expand', { chunkId: 'chunk_test', direction: 'down' });
     const text = result.content[0].text;
 
     // Should use "chunkId" label, not "_id"
@@ -361,7 +361,7 @@ describe('Consistent chunkId naming across PD tools (VAL-CROSS-003)', () => {
     expect(text).not.toMatch(/\b_id\b/);
   });
 
-  it('pd_search uses chunkId field directly (API returns chunkId)', async () => {
+  it('deep_search uses chunkId field directly (API returns chunkId)', async () => {
     setupFetch(
       mockFetchResponse(200, { data: { sessionId: 'sess_1', createdAt: Date.now(), expiresAt: Date.now() + 3600000 } }),
       mockFetchResponse(200, {
@@ -383,13 +383,13 @@ describe('Consistent chunkId naming across PD tools (VAL-CROSS-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_search', { query: 'test' });
+    const result = await callTool('deep_search', { query: 'test' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/chunkId.*chunk_search_result/i);
   });
 
-  it('pd_read uses chunkId field directly (API returns chunkId)', async () => {
+  it('deep_read uses chunkId field directly (API returns chunkId)', async () => {
     setupFetch(
       mockFetchResponse(200, {
         data: {
@@ -416,7 +416,7 @@ describe('Consistent chunkId naming across PD tools (VAL-CROSS-003)', () => {
       }),
     );
 
-    const result = await callTool('pd_read', { chunkId: 'chunk_read_result' });
+    const result = await callTool('deep_read', { chunkId: 'chunk_read_result' });
     const text = result.content[0].text;
 
     expect(text).toMatch(/chunkId.*chunk_read_result/i);

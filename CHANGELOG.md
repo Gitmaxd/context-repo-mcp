@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-11
+
+### Changed
+- Renamed `search_context_repo` to `find_items` -- catalog/discovery search across all content types
+- Renamed `pd_search` to `deep_search` -- document content exploration via hierarchical chunks
+- Renamed `pd_read` to `deep_read` -- single chunk inspection with hierarchy metadata
+- Renamed `pd_expand` to `deep_expand` -- 5-direction document tree navigation
+- Rewrote all search tool descriptions for clearer agent guidance, explicitly contrasting catalog search vs progressive disclosure search
+- Aligns tool names with web-hosted MCP server (PR #84 in main app repo)
+
 ## [1.2.1] - 2026-03-10
 
 ### Changed

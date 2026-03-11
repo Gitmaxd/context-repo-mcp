@@ -416,10 +416,16 @@ const TOOLS = [
     },
   },
 
-  // Search Tool
+  // Catalog Search Tool
   {
-    name: "search_context_repo",
-    description: "Search across all prompts, documents, and collections. Uses semantic search by default for natural language understanding.",
+    name: "find_items",
+    description:
+      "Discover prompts, documents, and collections by semantic similarity or keyword match. " +
+      "Returns item-level results (titles, IDs, scores, short highlights) across all content types. " +
+      "Use this to locate items by topic, find what exists in your workspace, or narrow down to a " +
+      "specific prompt/document/collection before operating on it. Supports filtering by type " +
+      "(prompts, documents, collections) and toggling between semantic (default) and literal matching " +
+      "modes. For deep exploration of document content with hierarchical navigation, use deep_search instead.",
     inputSchema: {
       type: "object",
       properties: {
@@ -441,16 +447,18 @@ const TOOLS = [
     },
   },
 
-  // Progressive Disclosure Tools
+  // Deep Search Tools (Progressive Disclosure)
   {
-    name: "pd_search",
+    name: "deep_search",
     description:
-      "Search documents using vector similarity and return hierarchical chunk results. " +
-      "Unlike search_context_repo (which returns flat document/prompt/collection matches), " +
-      "pd_search returns ranked document chunks with hierarchy metadata (level, parentId, siblingIds) " +
-      "enabling progressive disclosure navigation. Each result includes a chunkId that can be passed to " +
-      "pd_expand (to navigate up/down/next/previous in the hierarchy) or pd_read (to get full chunk details). " +
-      "Use this as the entry point for deep document exploration.",
+      "Search within document content using vector similarity and return ranked, hierarchical chunks. " +
+      "Unlike find_items (which returns item-level catalog results across prompts, documents, and collections), " +
+      "deep_search returns granular content fragments with structural metadata -- each result includes a chunkId, " +
+      "hierarchy level (document/section/paragraph), and navigation links (parentId, siblingIds). Use the returned " +
+      "chunkIds with deep_read to inspect full chunk details, or deep_expand to navigate up/down/next/previous/" +
+      "surrounding in the document tree. Ideal for answering specific questions, finding passages, or progressively " +
+      "exploring large documents without loading everything at once. Supports session-based deduplication, and " +
+      "filtering by collection or document.",
     inputSchema: {
       type: "object",
       properties: {
@@ -480,20 +488,19 @@ const TOOLS = [
   },
 
   {
-    name: "pd_read",
+    name: "deep_read",
     description:
-      "Retrieve a single document chunk with full hierarchy metadata for deep inspection. " +
-      "Use after pd_search (to inspect a search result in detail) or pd_expand (to examine a " +
-      "navigated chunk). Returns the complete content plus structural metadata: document position " +
-      "(sectionPath, chunkIndex), navigation IDs (parentChunkId, prevSiblingId, nextSiblingId), " +
-      "and content metadata (wordCount, startIndex, endIndex, headingText). " +
-      "Use pd_expand with the returned chunkId to navigate to related chunks.",
+      "Retrieve a single document chunk with full content and hierarchy metadata. Use after " +
+      "deep_search (to inspect a result in detail) or deep_expand (to examine a navigated chunk). " +
+      "Returns complete text plus structural position: sectionPath, chunkIndex, navigation IDs " +
+      "(parentChunkId, prevSiblingId, nextSiblingId), and content metadata (wordCount, headingText). " +
+      "Pass the returned chunkId to deep_expand for further navigation.",
     inputSchema: {
       type: "object",
       properties: {
         chunkId: {
           type: "string",
-          description: "The chunk ID to read (from pd_search or pd_expand results)",
+          description: "The chunk ID to read (from deep_search or deep_expand results)",
         },
       },
       required: ["chunkId"],
@@ -501,22 +508,18 @@ const TOOLS = [
   },
 
   {
-    name: "pd_expand",
+    name: "deep_expand",
     description:
-      "Navigate the document hierarchy from a specific chunk. Used after pd_search to explore " +
-      "related content in 5 directions: up (parent chunk — move to the containing section or document), " +
-      "down (child chunks — expand into sub-sections or paragraphs), " +
-      "next (next sibling — move to the following chunk at the same level), " +
-      "previous (previous sibling — move to the preceding chunk at the same level), " +
-      "surrounding (context window — get nearby chunks for broader context). " +
-      "Pass a chunkId from pd_search results and a direction to navigate. " +
-      "Use pd_read for full metadata on any returned chunk.",
+      "Navigate the document hierarchy from a chunk in 5 directions: up (parent), down (children), " +
+      "next (next sibling), previous (previous sibling), surrounding (context window of nearby siblings). " +
+      "Use after deep_search to explore related content without re-searching. Pass any chunkId from " +
+      "deep_search or a previous deep_expand call. Use deep_read on any returned chunk for full metadata.",
     inputSchema: {
       type: "object",
       properties: {
         chunkId: {
           type: "string",
-          description: "The chunk ID to expand from (from pd_search or pd_expand results)",
+          description: "The chunk ID to expand from (from deep_search or deep_expand results)",
         },
         direction: {
           type: "string",
@@ -872,7 +875,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "search_context_repo": {
+      case "find_items": {
         const params = new URLSearchParams();
         params.set("q", args.query);
         if (args.type) params.set("type", args.type);
@@ -939,7 +942,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "pd_search": {
+      case "deep_search": {
         // Build the search request body
         const searchBody = { query: args.query };
         if (args.limit !== undefined) searchBody.limit = args.limit;
@@ -1018,7 +1021,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "pd_read": {
+      case "deep_read": {
         const readResult = await apiRequest("GET", `/v1/pd/read/${args.chunkId}`);
         const chunk = readResult.data;
 
@@ -1060,14 +1063,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         lines.push(``);
-        lines.push(`> Use pd_expand with this chunkId to navigate to related chunks.`);
+        lines.push(`> Use deep_expand with this chunkId to navigate to related chunks.`);
 
         return {
           content: [{ type: "text", text: lines.join("\n") }],
         };
       }
 
-      case "pd_expand": {
+      case "deep_expand": {
         // Build the expand request body
         const expandBody = { chunkId: args.chunkId, direction: args.direction };
         if (args.count !== undefined) expandBody.count = args.count;
