@@ -5,7 +5,7 @@
 [![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-One%20Click-blue)](https://contextrepo.com/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An MCP (Model Context Protocol) server that enables any MCP-compatible client to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections.
+An MCP (Model Context Protocol) server that enables any MCP-compatible client to interact with your [Context Repo](https://contextrepo.com) prompts, documents, and collections — with progressive disclosure search for hierarchical document navigation.
 
 ## Compatible MCP Clients
 
@@ -27,6 +27,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 - **Document Management** - Full CRUD with version history: list, view, create, update, delete, and restore documents
 - **Collection Management** - Full CRUD: list, view, create, update, delete collections, plus add/remove items
 - **Version History** - View and restore previous versions of prompts and documents
+- **Progressive Disclosure Search** - Hierarchical document search with 3-level chunking (document → section → paragraph) and directional navigation
 - **Secure Authentication** - API key-based authentication
 
 ## Prerequisites
@@ -263,6 +264,14 @@ Once connected, your MCP client can use these tools:
 |------|-------------|
 | `search_context_repo` | Semantic search across all prompts, documents, and collections |
 
+### Progressive Disclosure
+
+| Tool | Description |
+|------|-------------|
+| `pd_search` | Search with hierarchical chunk results and auto-session deduplication |
+| `pd_expand` | Navigate document hierarchy in 5 directions (up, down, next, previous, surrounding) |
+| `pd_read` | Get a single chunk with full hierarchy metadata |
+
 ## Semantic Search
 
 The `search_context_repo` tool enables natural language search across your entire Context Repo. Instead of requiring exact keyword matches, it understands the meaning of your query.
@@ -323,6 +332,101 @@ Results are filtered by relevance score (0.0 to 1.0):
 2. **Use natural language** - Ask questions like you would to a colleague
 3. **Include context** - "meeting notes from last sprint" is more precise than "notes"
 
+## Progressive Disclosure Search
+
+The `pd_search`, `pd_expand`, and `pd_read` tools enable hierarchical document exploration. Instead of returning whole documents, progressive disclosure returns the most specific matching chunk (paragraph, section, or document level) and lets you navigate the hierarchy around it.
+
+### How It Works
+
+Documents are organized into a 3-level hierarchy:
+
+```
+Document → Section → Paragraph
+```
+
+1. **Documents are chunked** into a 3-level hierarchy (document, section, paragraph)
+2. **Vector search finds** the most specific matching level for your query
+3. **Navigate the hierarchy** using expand directions (up, down, next, previous, surrounding)
+4. **Sessions track seen chunks** for deduplication across iterative searches
+
+### The Three-Tool Workflow
+
+- **Step 1: `pd_search`** — Find relevant chunks matching your query
+- **Step 2: `pd_expand`** — Navigate to related content (parent sections, child paragraphs, siblings)
+- **Step 3: `pd_read`** — Get full details and metadata on a specific chunk
+
+### `pd_search` Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | The search query for vector similarity matching |
+| `limit` | number | No | 10 | Maximum number of results to return |
+| `sessionId` | string | No | auto-created | Session ID for result deduplication across searches |
+| `collectionId` | string | No | - | Filter results to a specific collection |
+| `documentId` | string | No | - | Filter results to a specific document |
+
+### `pd_expand` Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `chunkId` | string | Yes | - | The chunk ID to expand from (from `pd_search` or `pd_expand` results) |
+| `direction` | string | Yes | - | Navigation direction: `up`, `down`, `next`, `previous`, or `surrounding` |
+| `count` | number | No | server default | Number of chunks to return |
+
+### `pd_read` Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `chunkId` | string | Yes | - | The chunk ID to read (from `pd_search` or `pd_expand` results) |
+
+### Direction Reference
+
+| Direction | Description |
+|-----------|-------------|
+| `up` | Get the parent chunk (paragraph → section → document) |
+| `down` | Get child chunks (document → sections, section → paragraphs) |
+| `next` | Get next sibling at the same level |
+| `previous` | Get previous sibling at the same level |
+| `surrounding` | Get nearby chunks for a context window |
+
+### Auto-Session Deduplication
+
+`pd_search` automatically creates a session on the first call. Subsequent searches within the same connection exclude previously returned chunks, enabling iterative refinement without seeing duplicate results. Providing an explicit `sessionId` overrides the auto-session behavior.
+
+### Difference from `search_context_repo`
+
+| | `search_context_repo` | `pd_search` |
+|---|---|---|
+| **Results** | Flat matches across prompts, documents, and collections | Hierarchical chunk results within documents |
+| **Best for** | Finding which document contains something | Finding the exact paragraph or section and navigating around it |
+| **Navigation** | None — returns top-level matches | Full hierarchy navigation via `pd_expand` |
+
+### Example Queries
+
+**Finding content:**
+```
+"Search for chunks about authentication"
+"Find paragraphs mentioning API rate limits"
+```
+
+**Navigating:**
+```
+"Expand down from this section to see its paragraphs"
+"Go up from this paragraph to see the full section"
+```
+
+**Deep inspection:**
+```
+"Read chunk [chunkId] for full details"
+```
+
+### Tips for Best Results
+
+1. **Start with `pd_search`** then use `pd_expand` to navigate the hierarchy
+2. **Use sessions for iterative refinement** — auto-created by default, so repeated searches automatically skip already-seen chunks
+3. **Use `pd_read` when you need full metadata** — section path, word count, heading text, and navigation IDs
+4. **Filter by `collectionId` or `documentId`** to narrow scope before searching
+
 ## Example Usage
 
 Try these commands with your MCP client:
@@ -368,6 +472,15 @@ Try these commands with your MCP client:
 "Search my collections for research materials"
 ```
 
+### Progressive Disclosure
+```
+"Search for chunks about API authentication"
+"Expand down from chunk [ID] to see child paragraphs"
+"Expand up from this paragraph to see the full section"
+"Read chunk [ID] for full details and hierarchy metadata"
+"Search for more results about authentication" (with auto-session dedup)
+```
+
 ## Troubleshooting
 
 ### Server not connecting
@@ -396,6 +509,7 @@ You should see the startup banner. Press Ctrl+C to exit.
 git clone https://github.com/Gitmaxd/context-repo-mcp.git
 cd context-repo-mcp
 npm install
+npm test                                    # Run test suite (Vitest)
 CONTEXTREPO_API_KEY=gm_your_key npm start
 ```
 
