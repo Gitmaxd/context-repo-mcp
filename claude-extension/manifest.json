@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "context-repo",
   "display_name": "Context Repo",
-  "version": "1.2.0",
-  "description": "Access your prompts, documents, and collections from Context Repo directly in Claude",
-  "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Search with natural language, create, update, and organize your AI content.\n\n**Features:**\n- Semantic search across all content with natural language queries\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
+  "version": "1.2.1",
+  "description": "Access your prompts, documents, and collections from Context Repo directly in Claude, with progressive disclosure search for hierarchical document navigation",
+  "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Search with natural language, navigate document hierarchies, and organize your AI content.\n\n**Features:**\n- Progressive disclosure search with 3-level hierarchy (document, section, paragraph)\n- Hierarchical navigation in 5 directions (up, down, next, previous, surrounding)\n- Session-based deduplication for iterative search refinement\n- Semantic search across all content with natural language queries\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
   "author": {
     "name": "Context Repo",
     "url": "https://contextrepo.com"
@@ -23,7 +23,9 @@
     "documents",
     "collections",
     "productivity",
-    "semantic-search"
+    "semantic-search",
+    "progressive-disclosure",
+    "hierarchical-search"
   ],
   "server": {
     "type": "node",
