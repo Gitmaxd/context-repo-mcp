@@ -26,6 +26,9 @@ import {
 const API_BASE_URL = process.env.CONTEXTREPO_API_URL || "https://api.contextrepo.com";
 const API_KEY = process.env.CONTEXTREPO_API_KEY;
 
+// Auto-session state for progressive disclosure search deduplication
+let currentSessionId = null;
+
 if (!API_KEY) {
   console.error("╔════════════════════════════════════════════════════════════════╗");
   console.error("║  ERROR: CONTEXTREPO_API_KEY environment variable is required  ║");
@@ -107,7 +110,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.1.0",
+    version: "1.2.0",
   },
   {
     capabilities: {
@@ -435,6 +438,97 @@ const TOOLS = [
         },
       },
       required: ["query"],
+    },
+  },
+
+  // Progressive Disclosure Tools
+  {
+    name: "pd_search",
+    description:
+      "Search documents using vector similarity and return hierarchical chunk results. " +
+      "Unlike search_context_repo (which returns flat document/prompt/collection matches), " +
+      "pd_search returns ranked document chunks with hierarchy metadata (level, parentId, siblingIds) " +
+      "enabling progressive disclosure navigation. Each result includes a chunkId that can be passed to " +
+      "pd_expand (to navigate up/down/next/previous in the hierarchy) or pd_read (to get full chunk details). " +
+      "Use this as the entry point for deep document exploration.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The search query for vector similarity matching",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of results to return (server default: 10)",
+        },
+        sessionId: {
+          type: "string",
+          description: "Optional session ID for result deduplication across searches. If omitted, an auto-session is created and reused.",
+        },
+        collectionId: {
+          type: "string",
+          description: "Filter results to a specific collection",
+        },
+        documentId: {
+          type: "string",
+          description: "Filter results to a specific document",
+        },
+      },
+      required: ["query"],
+    },
+  },
+
+  {
+    name: "pd_read",
+    description:
+      "Retrieve a single document chunk with full hierarchy metadata for deep inspection. " +
+      "Use after pd_search (to inspect a search result in detail) or pd_expand (to examine a " +
+      "navigated chunk). Returns the complete content plus structural metadata: document position " +
+      "(sectionPath, chunkIndex), navigation IDs (parentChunkId, prevSiblingId, nextSiblingId), " +
+      "and content metadata (wordCount, startIndex, endIndex, headingText). " +
+      "Use pd_expand with the returned chunkId to navigate to related chunks.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chunkId: {
+          type: "string",
+          description: "The chunk ID to read (from pd_search or pd_expand results)",
+        },
+      },
+      required: ["chunkId"],
+    },
+  },
+
+  {
+    name: "pd_expand",
+    description:
+      "Navigate the document hierarchy from a specific chunk. Used after pd_search to explore " +
+      "related content in 5 directions: up (parent chunk — move to the containing section or document), " +
+      "down (child chunks — expand into sub-sections or paragraphs), " +
+      "next (next sibling — move to the following chunk at the same level), " +
+      "previous (previous sibling — move to the preceding chunk at the same level), " +
+      "surrounding (context window — get nearby chunks for broader context). " +
+      "Pass a chunkId from pd_search results and a direction to navigate. " +
+      "Use pd_read for full metadata on any returned chunk.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chunkId: {
+          type: "string",
+          description: "The chunk ID to expand from (from pd_search or pd_expand results)",
+        },
+        direction: {
+          type: "string",
+          enum: ["up", "down", "next", "previous", "surrounding"],
+          description: "Navigation direction: up (parent), down (children), next/previous (siblings), surrounding (context window)",
+        },
+        count: {
+          type: "number",
+          description: "Number of chunks to return (optional, server default applies)",
+        },
+      },
+      required: ["chunkId", "direction"],
     },
   },
 ];
@@ -845,6 +939,192 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "pd_search": {
+        // Build the search request body
+        const searchBody = { query: args.query };
+        if (args.limit !== undefined) searchBody.limit = args.limit;
+        if (args.collectionId) searchBody.collectionId = args.collectionId;
+        if (args.documentId) searchBody.documentId = args.documentId;
+
+        // Determine sessionId to use
+        let sessionIdToUse = null;
+
+        if (args.sessionId) {
+          // Explicit sessionId provided — use it directly, don't touch auto-session
+          sessionIdToUse = args.sessionId;
+        } else {
+          // No explicit sessionId — use auto-session
+          if (!currentSessionId) {
+            // First call: create a session
+            try {
+              const sessionResult = await apiRequest("POST", "/v1/pd/session", {});
+              currentSessionId = sessionResult.data.sessionId;
+            } catch (err) {
+              // Session creation failed — proceed without session (graceful degradation)
+              console.error(`[PD] Auto-session creation failed: ${err.message}`);
+            }
+          }
+          sessionIdToUse = currentSessionId;
+        }
+
+        if (sessionIdToUse) {
+          searchBody.sessionId = sessionIdToUse;
+        }
+
+        const searchResult = await apiRequest("POST", "/v1/pd/search", searchBody);
+        const results = searchResult.data.results;
+        const meta = searchResult.data.meta;
+
+        if (!results || results.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No results found for "${meta?.query || args.query}".`,
+              },
+            ],
+          };
+        }
+
+        // Format each result with hierarchy metadata
+        const formattedResults = results.map((r, i) => {
+          const preview = r.content?.length > 200 ? r.content.slice(0, 200) + "..." : r.content;
+          const lines = [
+            `### Result ${i + 1}`,
+            `- **chunkId:** ${r.chunkId}`,
+            `- **Score:** ${typeof r.score === "number" ? r.score.toFixed(2) : r.score}`,
+            `- **Level:** ${r.level}`,
+            `- **Document:** ${r.documentTitle} (${r.documentId})`,
+            `- **Content:** ${preview}`,
+          ];
+
+          if (r.parentId) {
+            lines.push(`- **Parent:** ${r.parentId}`);
+          }
+
+          if (r.siblingIds) {
+            if (r.siblingIds.prev) lines.push(`- **Prev Sibling:** ${r.siblingIds.prev}`);
+            if (r.siblingIds.next) lines.push(`- **Next Sibling:** ${r.siblingIds.next}`);
+          }
+
+          return lines.join("\n");
+        });
+
+        const header = `## Progressive Disclosure Search: "${meta.query}"\n\n**Total Results:** ${meta.totalResults}`;
+        const text = `${header}\n\n${formattedResults.join("\n\n")}`;
+
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "pd_read": {
+        const readResult = await apiRequest("GET", `/v1/pd/read/${args.chunkId}`);
+        const chunk = readResult.data;
+
+        const lines = [
+          `## Chunk Details`,
+          ``,
+          `- **chunkId:** ${chunk.chunkId}`,
+          `- **Level:** ${chunk.level}`,
+          `- **Content:**`,
+          ``,
+          chunk.content,
+          ``,
+          `### Hierarchy`,
+          `- **Document:** ${chunk.hierarchy.documentTitle} (${chunk.hierarchy.documentId})`,
+          `- **Section Path:** ${chunk.hierarchy.sectionPath}`,
+          ``,
+          `### Position`,
+          `- **Chunk Index:** ${chunk.hierarchy.position.chunkIndex}`,
+        ];
+
+        if (chunk.hierarchy.position.parentChunkId) {
+          lines.push(`- **Parent Chunk:** ${chunk.hierarchy.position.parentChunkId}`);
+        }
+        if (chunk.hierarchy.position.prevSiblingId) {
+          lines.push(`- **Prev Sibling:** ${chunk.hierarchy.position.prevSiblingId}`);
+        }
+        if (chunk.hierarchy.position.nextSiblingId) {
+          lines.push(`- **Next Sibling:** ${chunk.hierarchy.position.nextSiblingId}`);
+        }
+
+        lines.push(``);
+        lines.push(`### Metadata`);
+        lines.push(`- **Word Count:** ${chunk.metadata.wordCount}`);
+        lines.push(`- **Start Index:** ${chunk.metadata.startIndex}`);
+        lines.push(`- **End Index:** ${chunk.metadata.endIndex}`);
+
+        if (chunk.metadata.headingText) {
+          lines.push(`- **Heading:** ${chunk.metadata.headingText}`);
+        }
+
+        lines.push(``);
+        lines.push(`> Use pd_expand with this chunkId to navigate to related chunks.`);
+
+        return {
+          content: [{ type: "text", text: lines.join("\n") }],
+        };
+      }
+
+      case "pd_expand": {
+        // Build the expand request body
+        const expandBody = { chunkId: args.chunkId, direction: args.direction };
+        if (args.count !== undefined) expandBody.count = args.count;
+
+        const expandResult = await apiRequest("POST", "/v1/pd/expand", expandBody);
+        const chunks = expandResult.data.chunks;
+
+        if (!chunks || chunks.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No chunks found in that direction.`,
+              },
+            ],
+          };
+        }
+
+        // Direction-specific labels
+        const directionLabels = {
+          up: "Parent chunk",
+          down: "Child chunks",
+          next: "Next sibling",
+          previous: "Previous sibling",
+          surrounding: "Surrounding chunks",
+        };
+
+        const label = directionLabels[args.direction] || "Chunks";
+
+        // Format each chunk, mapping _id to chunkId
+        const formattedChunks = chunks.map((chunk, i) => {
+          const chunkId = chunk._id || chunk.chunkId;
+          const lines = [
+            `### Chunk ${i + 1}`,
+            `- **chunkId:** ${chunkId}`,
+            `- **Level:** ${chunk.level}`,
+            `- **Chunk Index:** ${chunk.chunkIndex}`,
+            `- **Document:** ${chunk.documentTitle} (${chunk.documentId})`,
+          ];
+
+          if (chunk.parentChunkId) {
+            lines.push(`- **Parent:** ${chunk.parentChunkId}`);
+          }
+
+          lines.push(`- **Content:** ${chunk.content}`);
+
+          return lines.join("\n");
+        });
+
+        const header = `## ${label}\n\n**Direction:** ${args.direction} | **Results:** ${chunks.length}`;
+        const text = `${header}\n\n${formattedChunks.join("\n\n")}`;
+
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -898,7 +1178,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.1.0                   ║");
+  console.error("║              Context Repo MCP Server v1.2.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

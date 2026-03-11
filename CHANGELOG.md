@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-10
+
+### Added
+- `pd_search` tool - Search documents using vector similarity and return hierarchical chunk results for progressive disclosure navigation. Includes auto-session management for result deduplication across searches.
+- `pd_expand` tool - Navigate the document hierarchy from a specific chunk in 5 directions: up (parent), down (children), next/previous (siblings), and surrounding (context window).
+- `pd_read` tool - Retrieve a single document chunk with full hierarchy metadata (section path, position, navigation IDs, word count) for deep inspection.
+
 ## [1.1.0] - 2025-12-07
 
 ### Added

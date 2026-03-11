@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "context-repo",
   "display_name": "Context Repo",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Access your prompts, documents, and collections from Context Repo directly in Claude",
   "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Search with natural language, create, update, and organize your AI content.\n\n**Features:**\n- Semantic search across all content with natural language queries\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
   "author": {
@@ -135,6 +135,18 @@
     {
       "name": "search_context_repo",
       "description": "Search across all prompts, documents, and collections using semantic search"
+    },
+    {
+      "name": "pd_search",
+      "description": "Search documents using vector similarity and return hierarchical chunk results for progressive disclosure navigation"
+    },
+    {
+      "name": "pd_expand",
+      "description": "Navigate the document hierarchy from a specific chunk in 5 directions (up, down, next, previous, surrounding)"
+    },
+    {
+      "name": "pd_read",
+      "description": "Retrieve a single document chunk with full hierarchy metadata for deep inspection"
     }
   ],
   "compatibility": {
