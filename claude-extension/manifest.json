@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "context-repo",
   "display_name": "Context Repo",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Access your prompts, documents, and collections from Context Repo directly in Claude, with progressive disclosure search for hierarchical document navigation",
   "long_description": "Manage your entire prompt library, documents, and collections without leaving Claude. Search with natural language, navigate document hierarchies, and organize your AI content.\n\n**Features:**\n- Progressive disclosure search with 3-level hierarchy (document, section, paragraph)\n- Hierarchical navigation in 5 directions (up, down, next, previous, surrounding)\n- Session-based deduplication for iterative search refinement\n- Semantic search across all content with natural language queries\n- Full prompt management (create, read, update, delete)\n- Document management with markdown support\n- Collection organization for prompts and documents\n- Secure API key authentication",
   "author": {
@@ -52,87 +52,87 @@
   "tools": [
     {
       "name": "list_prompts",
-      "description": "List all prompts with optional search"
+      "description": "List all prompts belonging to the authenticated user. Returns prompt titles, descriptions, and metadata."
     },
     {
       "name": "get_prompt",
-      "description": "Get full prompt details by ID"
+      "description": "Get the full details of a specific prompt including its content and variables"
     },
     {
       "name": "create_prompt",
-      "description": "Create a new prompt template"
+      "description": "Create a new prompt template with variables using ${variableName} syntax"
     },
     {
       "name": "update_prompt",
-      "description": "Update an existing prompt"
+      "description": "Update an existing prompt with automatic version history tracking"
     },
     {
       "name": "delete_prompt",
-      "description": "Delete a prompt"
+      "description": "Permanently delete a prompt and all its version history"
     },
     {
       "name": "get_prompt_versions",
-      "description": "Get version history of a prompt"
+      "description": "Get the version history of a prompt with change logs and content previews"
     },
     {
       "name": "restore_prompt_version",
-      "description": "Restore a prompt to a previous version"
+      "description": "Restore a prompt to a previous version with non-destructive rollback"
     },
     {
       "name": "list_collections",
-      "description": "List all collections"
+      "description": "List all collections with names, descriptions, and item counts"
     },
     {
       "name": "get_collection",
-      "description": "Get collection details"
+      "description": "Get collection details including its prompts and documents"
     },
     {
       "name": "create_collection",
-      "description": "Create a new collection"
+      "description": "Create a new collection folder to organize prompts and documents"
     },
     {
       "name": "update_collection",
-      "description": "Update collection metadata"
+      "description": "Update a collection's name, description, color, or icon"
     },
     {
       "name": "delete_collection",
-      "description": "Delete a collection"
+      "description": "Delete a collection folder without deleting the items inside it"
     },
     {
       "name": "add_to_collection",
-      "description": "Add items to a collection"
+      "description": "Add documents or prompts to a collection by their IDs"
     },
     {
       "name": "remove_from_collection",
-      "description": "Remove items from a collection"
+      "description": "Remove documents or prompts from a collection without deleting them"
     },
     {
       "name": "list_documents",
-      "description": "List documents"
+      "description": "List all documents with optional collection filtering and keyword search"
     },
     {
       "name": "get_document",
-      "description": "Get document content"
+      "description": "Get the full content of a specific document including text, tags, and metadata"
     },
     {
       "name": "create_document",
-      "description": "Create a new document"
+      "description": "Create a new text document with markdown support and automatic semantic indexing"
     },
     {
       "name": "update_document",
-      "description": "Update a document"
+      "description": "Update an existing document with automatic version history and re-indexing"
     },
     {
       "name": "delete_document",
-      "description": "Delete a document"
+      "description": "Permanently delete a document and all its version history and search index entries"
     },
     {
       "name": "get_document_versions",
-      "description": "Get version history of a document"
+      "description": "Get the version history of a document with change logs and content previews"
     },
     {
       "name": "restore_document_version",
-      "description": "Restore a document to a previous version"
+      "description": "Restore a document to a previous version with non-destructive rollback and re-indexing"
     },
     {
       "name": "find_items",
