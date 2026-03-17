@@ -1,7 +1,6 @@
 # Context Repo MCP Server
 
 [![npm version](https://img.shields.io/npm/v/context-repo-mcp.svg)](https://www.npmjs.com/package/context-repo-mcp)
-[![Claude Desktop Extension](https://img.shields.io/badge/Claude%20Desktop-Extension-purple)](https://github.com/Gitmaxd/context-repo-mcp/releases)
 [![Install to Cursor](https://img.shields.io/badge/Install%20to%20Cursor-One%20Click-blue)](https://contextrepo.com/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -37,22 +36,6 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 - [Context Repo](https://contextrepo.com) account with an API key
 
 ## Installation
-
-### Claude Desktop Extension (One-Click Install)
-
-The easiest way to use Context Repo with Claude Desktop:
-
-1. **Download** the latest `.mcpb` file from [Releases](https://github.com/Gitmaxd/context-repo-mcp/releases)
-2. **Install** using one of these methods:
-   - **Double-click** the `.mcpb` file to open Claude Desktop's install dialog
-   - **Drag and drop** the file into Claude Desktop window
-   - **File menu:** Developer → Extensions → Install Extension → select the file
-3. **Enter your API key** when prompted (get one at [contextrepo.com/dashboard](https://contextrepo.com/dashboard))
-4. **Done!** Start using Context Repo in any conversation
-
-> The extension securely stores your API key in your system's credential manager.
-
----
 
 ### Option 1: Install globally from npm
 
@@ -222,55 +205,55 @@ Or if installed globally:
 
 Once connected, your MCP client can use these tools:
 
-### Prompts
+### Prompts (7 tools)
 
 | Tool | Description |
 |------|-------------|
-| `list_prompts` | List prompts with optional search |
-| `get_prompt` | Get full prompt details by ID |
-| `create_prompt` | Create a new prompt template |
-| `update_prompt` | Update an existing prompt |
-| `delete_prompt` | Permanently delete a prompt |
-| `get_prompt_versions` | Get version history of a prompt |
-| `restore_prompt_version` | Restore a prompt to a previous version |
+| `list_prompts` | List all prompts belonging to the authenticated user with optional keyword search |
+| `get_prompt` | Get full prompt details including content, variables, and engine target |
+| `create_prompt` | Create a new prompt template with `${variableName}` syntax support |
+| `update_prompt` | Update an existing prompt with automatic version history tracking |
+| `delete_prompt` | Permanently delete a prompt and all its version history |
+| `get_prompt_versions` | Get version history with change logs, timestamps, and version IDs |
+| `restore_prompt_version` | Restore a prompt to a previous version (non-destructive, creates new version) |
 
-### Documents
-
-| Tool | Description |
-|------|-------------|
-| `list_documents` | List documents (optionally filtered by collection) |
-| `get_document` | Get full document content by ID |
-| `create_document` | Create a new document |
-| `update_document` | Update an existing document |
-| `delete_document` | Permanently delete a document |
-| `get_document_versions` | Get version history of a document |
-| `restore_document_version` | Restore a document to a previous version |
-
-### Collections
+### Documents (7 tools)
 
 | Tool | Description |
 |------|-------------|
-| `list_collections` | List all collections with optional search |
-| `get_collection` | Get collection details (optionally include items) |
-| `create_collection` | Create a new collection |
-| `update_collection` | Update collection metadata |
-| `delete_collection` | Delete a collection (items are preserved) |
-| `add_to_collection` | Add documents or prompts to a collection |
-| `remove_from_collection` | Remove items from a collection |
+| `list_documents` | List all documents with optional collection filter and keyword search |
+| `get_document` | Get full document content, title, tags, and metadata |
+| `create_document` | Create a new text or markdown document with optional tags |
+| `update_document` | Update a document with automatic version history and re-indexing |
+| `delete_document` | Permanently delete a document, its versions, and search index entries |
+| `get_document_versions` | Get version history with change logs, timestamps, and version IDs |
+| `restore_document_version` | Restore a document to a previous version with re-indexing (non-destructive) |
 
-### Search
-
-| Tool | Description |
-|------|-------------|
-| `find_items` | Semantic search across all prompts, documents, and collections |
-
-### Progressive Disclosure
+### Collections (7 tools)
 
 | Tool | Description |
 |------|-------------|
-| `deep_search` | Search with hierarchical chunk results and auto-session deduplication |
-| `deep_expand` | Navigate document hierarchy in 5 directions (up, down, next, previous, surrounding) |
-| `deep_read` | Get a single chunk with full hierarchy metadata |
+| `list_collections` | List all collections with names, descriptions, item counts, and IDs |
+| `get_collection` | Get collection details with optional item membership list |
+| `create_collection` | Create a new collection with optional color and emoji icon |
+| `update_collection` | Update collection name, description, color, or icon |
+| `delete_collection` | Delete a collection (items are preserved, only the folder is removed) |
+| `add_to_collection` | Add documents or prompts to a collection (items can belong to multiple) |
+| `remove_from_collection` | Remove items from a collection (items themselves are not deleted) |
+
+### Search (1 tool)
+
+| Tool | Description |
+|------|-------------|
+| `find_items` | Discover prompts, documents, and collections by semantic similarity or keyword match |
+
+### Progressive Disclosure (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `deep_search` | Search within document content returning ranked, hierarchical chunks with session deduplication |
+| `deep_read` | Retrieve a single chunk with full content, hierarchy metadata, and navigation IDs |
+| `deep_expand` | Navigate the document hierarchy in 5 directions (up, down, next, previous, surrounding) |
 
 ## Semantic Search
 
