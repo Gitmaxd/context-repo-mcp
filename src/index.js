@@ -110,7 +110,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.2.1",
+    version: "1.3.1",
   },
   {
     capabilities: {
@@ -128,7 +128,10 @@ const TOOLS = [
   // Prompt Tools
   {
     name: "list_prompts",
-    description: "List all prompts with optional search. Returns prompt titles, descriptions, and IDs.",
+    description:
+      "List all prompts belonging to the authenticated user. Returns prompt titles, descriptions, and metadata. " +
+      "Use this to browse your prompt library, find templates by keyword, or get prompt IDs needed for " +
+      "get_prompt, update_prompt, and delete_prompt operations.",
     inputSchema: {
       type: "object",
       properties: {
@@ -145,7 +148,10 @@ const TOOLS = [
   },
   {
     name: "get_prompt",
-    description: "Get the full details of a specific prompt including its content, parameters, and variables.",
+    description:
+      "Get the full details of a specific prompt including its content and variables. " +
+      "Returns the complete prompt template text, metadata, engine target, and variable definitions. " +
+      "Use after list_prompts or find_items to inspect a prompt before using or editing it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -159,7 +165,10 @@ const TOOLS = [
   },
   {
     name: "create_prompt",
-    description: "Create a new prompt template. Prompts can include variables using ${variableName} syntax.",
+    description:
+      "Create a new prompt template. Prompts can include variables using ${variableName} syntax. " +
+      "Requires title, description, content, and target engine. The created prompt is immediately " +
+      "available via list_prompts and find_items, and can be organized into collections with add_to_collection.",
     inputSchema: {
       type: "object",
       properties: {
@@ -173,7 +182,10 @@ const TOOLS = [
   },
   {
     name: "update_prompt",
-    description: "Update an existing prompt. Only provide the fields you want to change.",
+    description:
+      "Update an existing prompt. Only provide the fields you want to change. " +
+      "Each update automatically creates a new version in the prompt's history, which can be " +
+      "reviewed with get_prompt_versions and rolled back with restore_prompt_version.",
     inputSchema: {
       type: "object",
       properties: {
@@ -188,7 +200,10 @@ const TOOLS = [
   },
   {
     name: "delete_prompt",
-    description: "Permanently delete a prompt. This action cannot be undone.",
+    description:
+      "Permanently delete a prompt. This action cannot be undone. " +
+      "The prompt and all its version history will be removed. Use get_prompt first to confirm " +
+      "you have the correct prompt before deleting.",
     inputSchema: {
       type: "object",
       properties: {
@@ -199,7 +214,10 @@ const TOOLS = [
   },
   {
     name: "get_prompt_versions",
-    description: "Get the version history of a prompt. Shows all previous versions with change logs.",
+    description:
+      "Get the version history of a prompt. Shows all previous versions with change logs. " +
+      "Returns version IDs, timestamps, author names, and content previews. Use the returned " +
+      "versionId with restore_prompt_version to roll back to any previous state.",
     inputSchema: {
       type: "object",
       properties: {
@@ -213,7 +231,10 @@ const TOOLS = [
   },
   {
     name: "restore_prompt_version",
-    description: "Restore a prompt to a previous version. Creates a new version with the restored content.",
+    description:
+      "Restore a prompt to a previous version. Creates a new version with the restored content. " +
+      "Use get_prompt_versions first to find the versionId to restore. The restoration is " +
+      "non-destructive -- it creates a new version rather than deleting intermediate versions.",
     inputSchema: {
       type: "object",
       properties: {
@@ -233,7 +254,10 @@ const TOOLS = [
   // Collection Tools
   {
     name: "list_collections",
-    description: "List all collections you have access to. Collections organize prompts and documents.",
+    description:
+      "List all collections belonging to the authenticated user. Returns collection names, descriptions, " +
+      "item counts, and IDs. Collections are folders that organize prompts and documents into groups. " +
+      "Use the returned collectionId with get_collection, update_collection, or add_to_collection.",
     inputSchema: {
       type: "object",
       properties: {
@@ -244,7 +268,10 @@ const TOOLS = [
   },
   {
     name: "get_collection",
-    description: "Get details of a specific collection including its items.",
+    description:
+      "Get details of a specific collection including its items. Returns the collection's name, " +
+      "description, color, icon, and optionally all prompts and documents it contains. " +
+      "Set includeItems to true to retrieve the full membership list.",
     inputSchema: {
       type: "object",
       properties: {
@@ -256,7 +283,10 @@ const TOOLS = [
   },
   {
     name: "create_collection",
-    description: "Create a new collection to organize prompts and documents.",
+    description:
+      "Create a new collection to organize prompts and documents. Collections act as folders " +
+      "with optional color and emoji icon for visual organization. After creation, use " +
+      "add_to_collection to populate it with existing prompts or documents.",
     inputSchema: {
       type: "object",
       properties: {
@@ -270,7 +300,10 @@ const TOOLS = [
   },
   {
     name: "update_collection",
-    description: "Update a collection's metadata.",
+    description:
+      "Update a collection's metadata. Change the collection's name, description, color code, " +
+      "or emoji icon. Only provide the fields you want to change. Does not affect the " +
+      "prompts and documents inside the collection.",
     inputSchema: {
       type: "object",
       properties: {
@@ -285,7 +318,10 @@ const TOOLS = [
   },
   {
     name: "delete_collection",
-    description: "Delete a collection. Items in the collection are not deleted.",
+    description:
+      "Delete a collection. Items in the collection are NOT deleted -- only the organizational " +
+      "folder is removed. The prompts and documents that were in the collection remain " +
+      "accessible via list_prompts, list_documents, and find_items.",
     inputSchema: {
       type: "object",
       properties: {
@@ -296,7 +332,10 @@ const TOOLS = [
   },
   {
     name: "add_to_collection",
-    description: "Add documents or prompts to a collection.",
+    description:
+      "Add documents or prompts to a collection. Specify the collectionId, an array of item IDs, " +
+      "and whether they are 'document' or 'prompt' type. Items can belong to multiple collections. " +
+      "Returns counts of items added and items already in the collection.",
     inputSchema: {
       type: "object",
       properties: {
@@ -309,7 +348,10 @@ const TOOLS = [
   },
   {
     name: "remove_from_collection",
-    description: "Remove documents or prompts from a collection.",
+    description:
+      "Remove documents or prompts from a collection. This only removes the association -- " +
+      "the items themselves are not deleted and remain accessible. Specify the collectionId, " +
+      "an array of item IDs, and whether they are 'document' or 'prompt' type.",
     inputSchema: {
       type: "object",
       properties: {
@@ -324,7 +366,10 @@ const TOOLS = [
   // Document Tools
   {
     name: "list_documents",
-    description: "List documents, optionally filtered by collection.",
+    description:
+      "List all documents belonging to the authenticated user. Returns document titles, statuses, " +
+      "and IDs. Supports filtering by collection and keyword search. Use the returned document IDs " +
+      "with get_document, update_document, or delete_document for further operations.",
     inputSchema: {
       type: "object",
       properties: {
@@ -336,7 +381,10 @@ const TOOLS = [
   },
   {
     name: "get_document",
-    description: "Get the full content of a specific document.",
+    description:
+      "Get the full content of a specific document. Returns the complete document text, title, " +
+      "tags, and metadata. Use after list_documents or find_items to read a document's content. " +
+      "For granular content exploration, use deep_search and deep_read instead.",
     inputSchema: {
       type: "object",
       properties: {
@@ -347,7 +395,10 @@ const TOOLS = [
   },
   {
     name: "create_document",
-    description: "Create a new text document.",
+    description:
+      "Create a new text document. Supports plain text or markdown content with optional tags " +
+      "for categorization. The document is automatically indexed for semantic search via " +
+      "find_items and deep_search. Returns the created document's ID.",
     inputSchema: {
       type: "object",
       properties: {
@@ -360,7 +411,10 @@ const TOOLS = [
   },
   {
     name: "update_document",
-    description: "Update an existing document. Only provide fields you want to change.",
+    description:
+      "Update an existing document. Only provide fields you want to change. " +
+      "Each update automatically creates a new version in the document's history and triggers " +
+      "re-indexing for semantic search. Use get_document_versions to review changes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -374,7 +428,10 @@ const TOOLS = [
   },
   {
     name: "delete_document",
-    description: "Permanently delete a document. This action cannot be undone.",
+    description:
+      "Permanently delete a document. This action cannot be undone. " +
+      "The document, all its version history, and its search index entries will be removed. " +
+      "Use get_document first to confirm you have the correct document before deleting.",
     inputSchema: {
       type: "object",
       properties: {
@@ -385,7 +442,10 @@ const TOOLS = [
   },
   {
     name: "get_document_versions",
-    description: "Get the version history of a document. Shows all previous versions with change logs.",
+    description:
+      "Get the version history of a document. Shows all previous versions with change logs. " +
+      "Returns version IDs, timestamps, author names, and content previews. Use the returned " +
+      "versionId with restore_document_version to roll back to any previous state.",
     inputSchema: {
       type: "object",
       properties: {
@@ -399,7 +459,10 @@ const TOOLS = [
   },
   {
     name: "restore_document_version",
-    description: "Restore a document to a previous version. Creates a new version with the restored content.",
+    description:
+      "Restore a document to a previous version. Creates a new version with the restored content " +
+      "and triggers re-indexing for semantic search. Use get_document_versions first to find the " +
+      "versionId to restore. The restoration is non-destructive -- intermediate versions are preserved.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1181,7 +1244,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.2.0                   ║");
+  console.error("║              Context Repo MCP Server v1.3.1                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
