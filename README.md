@@ -209,8 +209,8 @@ Once connected, your MCP client can use these tools:
 
 | Tool | Description |
 |------|-------------|
-| `list_prompts` | List all prompts belonging to the authenticated user with optional keyword search |
-| `get_prompt` | Get full prompt details including content, variables, and engine target |
+| `search_prompts` | List all prompts belonging to the authenticated user with optional keyword search |
+| `read_prompt` | Get full prompt details including content, variables, and engine target |
 | `create_prompt` | Create a new prompt template with `${variableName}` syntax support |
 | `update_prompt` | Update an existing prompt with automatic version history tracking |
 | `delete_prompt` | Permanently delete a prompt and all its version history |

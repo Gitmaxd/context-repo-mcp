@@ -110,7 +110,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.3.2",
+    version: "1.4.0",
   },
   {
     capabilities: {
@@ -127,11 +127,11 @@ const server = new Server(
 const TOOLS = [
   // Prompt Tools
   {
-    name: "list_prompts",
+    name: "search_prompts",
     description:
       "List all prompts belonging to the authenticated user. Returns prompt titles, descriptions, and metadata. " +
       "Use this to browse your prompt library, find templates by keyword, or get prompt IDs needed for " +
-      "get_prompt, update_prompt, and delete_prompt operations.",
+      "read_prompt, update_prompt, and delete_prompt operations.",
     inputSchema: {
       type: "object",
       properties: {
@@ -147,11 +147,11 @@ const TOOLS = [
     },
   },
   {
-    name: "get_prompt",
+    name: "read_prompt",
     description:
       "Get the full details of a specific prompt including its content and variables. " +
       "Returns the complete prompt template text, metadata, engine target, and variable definitions. " +
-      "Use after list_prompts or find_items to inspect a prompt before using or editing it.",
+      "Use after search_prompts or find_items to inspect a prompt before using or editing it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -168,7 +168,7 @@ const TOOLS = [
     description:
       "Create a new prompt template. Prompts can include variables using ${variableName} syntax. " +
       "Requires title, description, content, and target engine. The created prompt is immediately " +
-      "available via list_prompts and find_items, and can be organized into collections with add_to_collection.",
+      "available via search_prompts and find_items, and can be organized into collections with add_to_collection.",
     inputSchema: {
       type: "object",
       properties: {
@@ -202,7 +202,7 @@ const TOOLS = [
     name: "delete_prompt",
     description:
       "Permanently delete a prompt. This action cannot be undone. " +
-      "The prompt and all its version history will be removed. Use get_prompt first to confirm " +
+      "The prompt and all its version history will be removed. Use read_prompt first to confirm " +
       "you have the correct prompt before deleting.",
     inputSchema: {
       type: "object",
@@ -321,7 +321,7 @@ const TOOLS = [
     description:
       "Delete a collection. Items in the collection are NOT deleted -- only the organizational " +
       "folder is removed. The prompts and documents that were in the collection remain " +
-      "accessible via list_prompts, list_documents, and find_items.",
+      "accessible via search_prompts, list_documents, and find_items.",
     inputSchema: {
       type: "object",
       properties: {
@@ -615,7 +615,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case "list_prompts": {
+      case "search_prompts": {
         const params = new URLSearchParams();
         if (args.search) params.set("q", args.search);
         if (args.limit) params.set("limit", String(args.limit));
@@ -633,7 +633,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_prompt": {
+      case "read_prompt": {
         const result = await apiRequest("GET", `/v1/prompts/${args.promptId}`);
         return {
           content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
@@ -1244,7 +1244,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.3.2                   ║");
+  console.error("║              Context Repo MCP Server v1.4.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

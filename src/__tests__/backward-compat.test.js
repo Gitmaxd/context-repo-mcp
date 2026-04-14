@@ -94,8 +94,8 @@ function setupFetch(...responses) {
 // The 22 original tools that must remain unchanged
 // =============================================================================
 const ORIGINAL_TOOL_NAMES = [
-  'list_prompts',
-  'get_prompt',
+  'search_prompts',
+  'read_prompt',
   'create_prompt',
   'update_prompt',
   'delete_prompt',
