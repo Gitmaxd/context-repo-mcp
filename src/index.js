@@ -17,6 +17,8 @@ import {
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
 // =============================================================================
@@ -116,6 +118,7 @@ const server = new Server(
     capabilities: {
       tools: {},
       resources: {},
+      prompts: {},
     },
   }
 );
@@ -606,6 +609,37 @@ const TOOLS = [
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   console.error("[MCP] Listing tools");
   return { tools: TOOLS };
+});
+
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+  console.error("[MCP] Listing prompts (protocol handler)");
+  const result = await apiRequest("GET", "/v1/prompts?limit=100");
+  return {
+    prompts: result.data.map((p) => ({
+      name: p._id,
+      description: `${p.title} — ${p.description}`,
+      arguments: [],
+    })),
+  };
+});
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const promptId = request.params.name;
+  console.error(`[MCP] Getting prompt (protocol handler): ${promptId}`);
+  const result = await apiRequest("GET", `/v1/prompts/${promptId}`);
+  const p = result.data;
+  return {
+    description: p.title,
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: p.content,
+        },
+      },
+    ],
+  };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {

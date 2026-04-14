@@ -38,6 +38,8 @@ vi.mock('@modelcontextprotocol/sdk/types.js', () => {
     ListToolsRequestSchema: { method: 'tools/list' },
     ListResourcesRequestSchema: { method: 'resources/list' },
     ReadResourceRequestSchema: { method: 'resources/read' },
+    ListPromptsRequestSchema: { method: 'prompts/list' },
+    GetPromptRequestSchema: { method: 'prompts/get' },
   };
 });
 
