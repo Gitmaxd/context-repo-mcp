@@ -112,7 +112,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.4.0",
+    version: "1.4.1",
   },
   {
     capabilities: {
@@ -128,6 +128,19 @@ const server = new Server(
 // =============================================================================
 
 const TOOLS = [
+  // User Info Tool
+  {
+    name: "get_user_info",
+    description:
+      "Get information about the authenticated user, including their profile details and API key permissions. " +
+      "Returns the user's name, ID, external ID, authentication method, and permission scopes. " +
+      "Use this to verify your identity, check what permissions your API key has, or confirm authentication status.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
   // Prompt Tools
   {
     name: "search_prompts",
@@ -649,6 +662,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+      case "get_user_info": {
+        const result = await apiRequest("GET", "/v1/user/me");
+        return {
+          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
+        };
+      }
+
       case "search_prompts": {
         const params = new URLSearchParams();
         if (args.search) params.set("q", args.search);
@@ -1278,7 +1298,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.4.0                   ║");
+  console.error("║              Context Repo MCP Server v1.4.1                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

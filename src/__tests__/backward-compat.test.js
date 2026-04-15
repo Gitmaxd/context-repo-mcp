@@ -126,9 +126,9 @@ const NEW_DEEP_TOOL_NAMES = ['deep_search', 'deep_expand', 'deep_read'];
 // VAL-COMPAT-001: All existing tools still registered + total count = 25
 // =============================================================================
 describe('Backward compatibility — tool registration (VAL-COMPAT-001)', () => {
-  it('should have exactly 25 tools total (22 original + 3 new PD)', async () => {
+  it('should have exactly 26 tools total (22 original + 3 new PD + 1 get_user_info)', async () => {
     const result = await listToolsHandler();
-    expect(result.tools.length).toBe(25);
+    expect(result.tools.length).toBe(26);
   });
 
   it('should contain all 22 original tool names', async () => {
