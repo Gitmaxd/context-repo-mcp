@@ -112,7 +112,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.4.1",
+    version: "1.4.2",
   },
   {
     capabilities: {
@@ -729,10 +729,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_prompt": {
-        await apiRequest("DELETE", `/v1/prompts/${args.promptId}`);
-        return {
-          content: [{ type: "text", text: `✓ Deleted prompt ${args.promptId}` }],
-        };
+        try {
+          await apiRequest("DELETE", `/v1/prompts/${args.promptId}`);
+          return {
+            content: [{ type: "text", text: `✓ Deleted prompt ${args.promptId}` }],
+          };
+        } catch (error) {
+          if (error instanceof Error && /not found/i.test(error.message)) {
+            return {
+              content: [{ type: "text", text: `Prompt ${args.promptId} was already deleted (no-op).` }],
+            };
+          }
+          throw error;
+        }
       }
 
       case "get_prompt_versions": {
@@ -845,10 +854,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_collection": {
-        await apiRequest("DELETE", `/v1/collections/${args.collectionId}`);
-        return {
-          content: [{ type: "text", text: `✓ Deleted collection ${args.collectionId}` }],
-        };
+        try {
+          await apiRequest("DELETE", `/v1/collections/${args.collectionId}`);
+          return {
+            content: [{ type: "text", text: `✓ Deleted collection ${args.collectionId}` }],
+          };
+        } catch (error) {
+          if (error instanceof Error && /not found/i.test(error.message)) {
+            return {
+              content: [{ type: "text", text: `Collection ${args.collectionId} was already deleted (no-op).` }],
+            };
+          }
+          throw error;
+        }
       }
 
       case "add_to_collection": {
@@ -940,10 +958,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_document": {
-        await apiRequest("DELETE", `/v1/documents/${args.documentId}`);
-        return {
-          content: [{ type: "text", text: `✓ Deleted document ${args.documentId}` }],
-        };
+        try {
+          await apiRequest("DELETE", `/v1/documents/${args.documentId}`);
+          return {
+            content: [{ type: "text", text: `✓ Deleted document ${args.documentId}` }],
+          };
+        } catch (error) {
+          if (error instanceof Error && /not found/i.test(error.message)) {
+            return {
+              content: [{ type: "text", text: `Document ${args.documentId} was already deleted (no-op).` }],
+            };
+          }
+          throw error;
+        }
       }
 
       case "get_document_versions": {
@@ -1298,7 +1325,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.4.1                   ║");
+  console.error("║              Context Repo MCP Server v1.4.2                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
