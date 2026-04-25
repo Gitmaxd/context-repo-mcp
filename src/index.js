@@ -676,7 +676,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("GET", `/v1/prompts?${params}`);
         const summary = result.data.map((p) => ({
-          id: p._id,
+          id: p.id ?? p._id,
           title: p.title,
           description: p.description,
           engine: p.engine,
