@@ -621,3 +621,27 @@ describe('deep_expand MCP response envelope (VAL-CROSS-004)', () => {
     expect(result.isError).toBe(true);
   });
 });
+
+// =============================================================================
+// TDD-M1: Parent field name regression (R-08)
+//
+// The server's /v1/pd/expand endpoint emits each chunk's parent reference as
+// `parentId` (matching the documented contract and what deep_search returns
+// at line ~1231 of src/index.js). The current deep_expand formatter reads
+// `chunk.parentChunkId` (line ~1341), so the "Parent:" line silently never
+// renders against real server payloads — only mocks that mimic the wrong
+// field shape (like the existing tests above) ever exercise that branch.
+//
+// These tests pin the CONTRACT: when the server provides a parent reference
+// under the documented `parentId` key, the formatted output must include the
+// "Parent:" line with that ID.
+//
+// Status: marked .todo for v1.5.0 (M-tier, not blocking the H-tier release).
+// To activate in v1.5.1: change `it.todo` -> `it`, change the formatter to
+// read `chunk.parentId` (or extend `getId` semantics), and run the suite.
+// =============================================================================
+describe('deep_expand parent field contract (TDD-M1, R-08)', () => {
+  it.todo('should render Parent line from server-emitted parentId (not parentChunkId)');
+  it.todo('should render Parent line for "up" direction when parentId is present');
+  it.todo('should omit Parent line when neither parentId nor parentChunkId is set');
+});
