@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-04-24
+
+### Fixed
+- **`search_prompts` no longer returns `id: undefined`** — handler now reads the canonical `id` field from the API response (TDD-H3). Fixes the silent identifier-rendering regression that broke downstream `read_prompt` / `update_prompt` chaining.
+- **`tools/list` and the legacy `prompts/list` MCP protocol method** now emit consistent prompt identifiers via a shared `getId()` helper, eliminating the `id` vs `_id` schism between the two surfaces (TDD-H1, H4).
+- **`create_prompt`, `create_collection`, `create_document`** now consistently emit the new resource's `id` in tool output (was sometimes `undefined`) (TDD-H1, H5).
+- **`get_prompt_versions`** correctly renders the `versionId` of each historical entry (TDD-H2).
+- **API error messages are now category-prefixed and informative** rather than the opaque "Internal Server Error" surfaced by some 4xx paths (TDD-H6, H7). 5xx bodies are logged server-side via `console.error` and replaced with a generic "Server error (status N). Please retry shortly." in the client surface (defense-in-depth against backend payload leakage).
+- **All API requests now have a 30-second timeout** via `AbortSignal.timeout`. Hung requests no longer leak file descriptors or block the MCP transport indefinitely. Timeout aborts surface as "Request timed out after 30s..." (TDD-H8).
+
+### Added
+- **CI pipeline** (`.github/workflows/ci.yml`): every PR and every push to `main` now runs the full unit suite on Node 18, 20, and 22, plus a `.mcpb` build sanity check.
+- **Pre-publish gate**: `publish.yml` now requires a green test run before `npm publish` and `.mcpb` upload. `package.json` also wires `prepublishOnly: npm test` as a belt-and-braces guard.
+- **Env-gated integration smoke** (`src/__tests__/integration-smoke.test.js`): live-backend smoke that runs against dev when `CONTEXTREPO_INTEGRATION=1` is set. Skipped by default to keep unit runs hermetic.
+- **62 new regression assertions** across 9 new test files, including snapshot-style pinning of the 26-tool `tools/list` contract (R-11), idempotent-delete contract for all three delete tools (R-09), restore-version cascade containment (R-03), and `deep_expand` parent-field contract todos (R-08, deferred to v1.5.1).
+
+### Changed
+- Internal helpers refactored: shared `getId(obj)`, shared `buildApiError(status, body, statusText)`, and a top-level `REQUEST_TIMEOUT_MS = 30_000` constant. No external API surface changes.
+- Renamed `src/__tests__/smoke.test.js` to `framework-sanity.test.js` to avoid conflating vitest/ESM sanity with product-level smoke (R-12). Three assertions unchanged.
+
+### Notes
+- TDD-M1 (`deep_expand` reads `chunk.parentChunkId` but the server emits `parentId`) is documented as `it.todo` in the test suite and deferred to v1.5.1. The surface-level effect is that the "Parent:" line is silently omitted from `deep_expand` output for `up`/`down` navigation; correctness of the chunks themselves is unaffected.
+
 ## [1.4.2] - 2026-04-17
 
 ### Fixed

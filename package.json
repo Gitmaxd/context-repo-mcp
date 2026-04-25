@@ -1,6 +1,6 @@
 {
   "name": "context-repo-mcp",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "MCP Server for Context Repo - connect any MCP client to your prompts, documents, and collections",
   "type": "module",
   "main": "src/index.js",
@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "vitest run",
-    "build:mcpb": "node scripts/build-mcpb.js"
+    "build:mcpb": "node scripts/build-mcpb.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp",

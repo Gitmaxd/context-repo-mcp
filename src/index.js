@@ -28,6 +28,11 @@ import {
 const API_BASE_URL = process.env.CONTEXTREPO_API_URL || "https://api.contextrepo.com";
 const API_KEY = process.env.CONTEXTREPO_API_KEY;
 
+// TDD-H8: bound every outbound HTTP request so a hung backend cannot stall
+// the stdio worker indefinitely. 30s is the same ceiling Convex uses for
+// HTTP actions and is comfortably above worst-case warm-path latency.
+const REQUEST_TIMEOUT_MS = 30_000;
+
 // Auto-session state for progressive disclosure search deduplication
 let currentSessionId = null;
 
@@ -51,9 +56,77 @@ const headers = {
 // API CLIENT
 // =============================================================================
 
+/**
+ * Builds a user-facing Error from an HTTP error response.
+ *
+ * Behavior contract:
+ *   - 401/403/404/429: emit a friendly category prefix + the server-supplied
+ *     message when present (preserves actionable backend diagnostics like
+ *     "Token expired", "Try again in 60s", "Document not found"). The 404
+ *     category prefix intentionally contains the literal substring
+ *     "Resource not found." so existing idempotent-delete handlers that
+ *     match /not found/i continue to work until they migrate to
+ *     `error.statusCode === 404` (TDD-M2).
+ *   - 5xx (TDD-H7 — defense against smoke B-09 stack-trace leak): NEVER
+ *     forward the server-supplied body to the client. Log it server-side
+ *     for operators, return an opaque message.
+ *   - 4xx other than the named categories: prefer the parsed server
+ *     message; fall back to "API error: <status> <statusText>".
+ *
+ * The thrown Error carries `.statusCode` so downstream handlers can switch
+ * on the HTTP status without parsing the message string (TDD-M2).
+ */
+function buildApiError(status, parsedBody, statusText) {
+  const serverMsg =
+    parsedBody?.error?.message ??
+    parsedBody?.message ??
+    (typeof parsedBody?.error === "string" ? parsedBody.error : null);
+
+  let userMsg;
+  if (status === 401) {
+    userMsg = serverMsg
+      ? `Authentication failed: ${serverMsg}`
+      : "Authentication failed. Check your API key.";
+  } else if (status === 403) {
+    userMsg = serverMsg
+      ? `Permission denied: ${serverMsg}`
+      : "Permission denied. Your API key may not have the required permissions.";
+  } else if (status === 404) {
+    userMsg = serverMsg
+      ? `Resource not found. ${serverMsg}`
+      : "Resource not found. Check that the ID is correct.";
+  } else if (status === 429) {
+    userMsg = serverMsg
+      ? `Rate limit exceeded. ${serverMsg}`
+      : "Rate limit exceeded. Please wait a moment before retrying.";
+  } else if (status >= 500) {
+    // TDD-H7: never forward 5xx body content to the client.
+    // Log server-side for operators; return opaque message.
+    console.error(
+      `[API ${status}] ${statusText} — server body: ${
+        serverMsg ?? (parsedBody ? JSON.stringify(parsedBody) : "<no body>")
+      }`,
+    );
+    userMsg = `Server error (status ${status}). Please retry shortly.`;
+  } else {
+    userMsg = serverMsg ?? `API error: ${status} ${statusText}`;
+  }
+
+  const err = new Error(userMsg);
+  err.statusCode = status;
+  return err;
+}
+
 async function apiRequest(method, path, body = null) {
   const url = `${API_BASE_URL}${path}`;
-  const options = { method, headers };
+  const options = {
+    method,
+    headers,
+    // TDD-H8: cap every request at REQUEST_TIMEOUT_MS so a hung backend
+    // never stalls the stdio worker. AbortSignal.timeout is available in
+    // Node ≥18.17 (the package's stated minimum is ≥18.0.0).
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  };
 
   if (body) {
     options.body = JSON.stringify(body);
@@ -65,31 +138,14 @@ async function apiRequest(method, path, body = null) {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      let errorMessage = `API error: ${response.status} ${response.statusText}`;
-
+      let parsedBody = null;
       try {
-        const errorData = await response.json();
-        if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        }
+        parsedBody = await response.json();
       } catch {
-        // Response body is not JSON
+        // Response body is not JSON — leave parsedBody null.
       }
 
-      if (response.status === 401) {
-        throw new Error("Authentication failed. Check your API key.");
-      }
-      if (response.status === 403) {
-        throw new Error("Permission denied. Your API key may not have the required permissions.");
-      }
-      if (response.status === 404) {
-        throw new Error("Resource not found. Check that the ID is correct.");
-      }
-      if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a moment before retrying.");
-      }
-
-      throw new Error(errorMessage);
+      throw buildApiError(response.status, parsedBody, response.statusText);
     }
 
     if (response.status === 204) {
@@ -98,11 +154,38 @@ async function apiRequest(method, path, body = null) {
 
     return await response.json();
   } catch (error) {
+    // Classify timeout BEFORE the generic network-error fallthrough.
+    // AbortSignal.timeout fires an AbortError (DOMException in some
+    // environments); both expose `name === "AbortError"`.
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new Error(
+        `Request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 1000)}s. The API did not respond in time.`,
+      );
+    }
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(`Network error: Unable to reach API. Check your internet connection.`);
     }
     throw error;
   }
+}
+
+// =============================================================================
+// RESPONSE-SHAPE HELPERS
+// =============================================================================
+
+/**
+ * Returns the canonical identifier for a record returned by the Context Repo API.
+ *
+ * The HTTP surface returns two shapes today:
+ *   - Transformed: `{ id, title, ... }` (e.g., GET/POST/PATCH /v1/prompts*)
+ *   - Raw Convex doc: `{ _id, _creationTime, userId, ... }` (e.g., POST /v1/documents,
+ *     POST /v1/collections — pending Group B server normalization).
+ *
+ * Reading `obj.id ?? obj._id` makes every handler forward-compatible with the
+ * canonical shape and backwards-compatible with any legacy raw-doc response.
+ */
+function getId(obj) {
+  return obj?.id ?? obj?._id ?? null;
 }
 
 // =============================================================================
@@ -112,7 +195,7 @@ async function apiRequest(method, path, body = null) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.4.2",
+    version: "1.5.0",
   },
   {
     capabilities: {
@@ -629,7 +712,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
   const result = await apiRequest("GET", "/v1/prompts?limit=100");
   return {
     prompts: result.data.map((p) => ({
-      name: p._id,
+      name: getId(p),
       description: `${p.title} — ${p.description}`,
       arguments: [],
     })),
@@ -676,7 +759,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("GET", `/v1/prompts?${params}`);
         const summary = result.data.map((p) => ({
-          id: p._id,
+          id: getId(p),
           title: p.title,
           description: p.description,
           engine: p.engine,
@@ -708,7 +791,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created prompt "${args.title}"\n\nID: ${result.data._id}`,
+              text: `✓ Created prompt "${args.title}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
@@ -757,7 +840,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           .map(
             (v, i) =>
               `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
-              `- **ID:** ${v._id}\n` +
+              `- **ID:** ${getId(v)}\n` +
               `- **Changed by:** ${v.userName || "Unknown"}\n` +
               `- **Change log:** ${v.changeLog || "No description"}\n` +
               (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
@@ -833,7 +916,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created collection "${args.name}"\n\nID: ${result.data._id}`,
+              text: `✓ Created collection "${args.name}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
@@ -937,7 +1020,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created document "${args.title}"\n\nID: ${result.data._id}`,
+              text: `✓ Created document "${args.title}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
@@ -1325,7 +1408,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.4.2                   ║");
+  console.error("║              Context Repo MCP Server v1.5.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
