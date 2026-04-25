@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "vitest run",
-    "build:mcpb": "node scripts/build-mcpb.js"
+    "build:mcpb": "node scripts/build-mcpb.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp",
