@@ -28,6 +28,11 @@ import {
 const API_BASE_URL = process.env.CONTEXTREPO_API_URL || "https://api.contextrepo.com";
 const API_KEY = process.env.CONTEXTREPO_API_KEY;
 
+// TDD-H8: bound every outbound HTTP request so a hung backend cannot stall
+// the stdio worker indefinitely. 30s is the same ceiling Convex uses for
+// HTTP actions and is comfortably above worst-case warm-path latency.
+const REQUEST_TIMEOUT_MS = 30_000;
+
 // Auto-session state for progressive disclosure search deduplication
 let currentSessionId = null;
 
@@ -114,7 +119,14 @@ function buildApiError(status, parsedBody, statusText) {
 
 async function apiRequest(method, path, body = null) {
   const url = `${API_BASE_URL}${path}`;
-  const options = { method, headers };
+  const options = {
+    method,
+    headers,
+    // TDD-H8: cap every request at REQUEST_TIMEOUT_MS so a hung backend
+    // never stalls the stdio worker. AbortSignal.timeout is available in
+    // Node ≥18.17 (the package's stated minimum is ≥18.0.0).
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  };
 
   if (body) {
     options.body = JSON.stringify(body);
@@ -142,6 +154,14 @@ async function apiRequest(method, path, body = null) {
 
     return await response.json();
   } catch (error) {
+    // Classify timeout BEFORE the generic network-error fallthrough.
+    // AbortSignal.timeout fires an AbortError (DOMException in some
+    // environments); both expose `name === "AbortError"`.
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new Error(
+        `Request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 1000)}s. The API did not respond in time.`,
+      );
+    }
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(`Network error: Unable to reach API. Check your internet connection.`);
     }
