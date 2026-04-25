@@ -195,7 +195,7 @@ function getId(obj) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.4.2",
+    version: "1.5.0",
   },
   {
     capabilities: {
@@ -1408,7 +1408,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.4.2                   ║");
+  console.error("║              Context Repo MCP Server v1.5.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
