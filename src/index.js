@@ -106,6 +106,25 @@ async function apiRequest(method, path, body = null) {
 }
 
 // =============================================================================
+// RESPONSE-SHAPE HELPERS
+// =============================================================================
+
+/**
+ * Returns the canonical identifier for a record returned by the Context Repo API.
+ *
+ * The HTTP surface returns two shapes today:
+ *   - Transformed: `{ id, title, ... }` (e.g., GET/POST/PATCH /v1/prompts*)
+ *   - Raw Convex doc: `{ _id, _creationTime, userId, ... }` (e.g., POST /v1/documents,
+ *     POST /v1/collections — pending Group B server normalization).
+ *
+ * Reading `obj.id ?? obj._id` makes every handler forward-compatible with the
+ * canonical shape and backwards-compatible with any legacy raw-doc response.
+ */
+function getId(obj) {
+  return obj?.id ?? obj?._id ?? null;
+}
+
+// =============================================================================
 // MCP SERVER SETUP
 // =============================================================================
 
@@ -629,7 +648,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
   const result = await apiRequest("GET", "/v1/prompts?limit=100");
   return {
     prompts: result.data.map((p) => ({
-      name: p._id,
+      name: getId(p),
       description: `${p.title} — ${p.description}`,
       arguments: [],
     })),
@@ -676,7 +695,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("GET", `/v1/prompts?${params}`);
         const summary = result.data.map((p) => ({
-          id: p.id ?? p._id,
+          id: getId(p),
           title: p.title,
           description: p.description,
           engine: p.engine,
@@ -708,7 +727,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created prompt "${args.title}"\n\nID: ${result.data._id}`,
+              text: `✓ Created prompt "${args.title}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
@@ -757,7 +776,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           .map(
             (v, i) =>
               `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
-              `- **ID:** ${v._id}\n` +
+              `- **ID:** ${getId(v)}\n` +
               `- **Changed by:** ${v.userName || "Unknown"}\n` +
               `- **Change log:** ${v.changeLog || "No description"}\n` +
               (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
@@ -833,7 +852,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created collection "${args.name}"\n\nID: ${result.data._id}`,
+              text: `✓ Created collection "${args.name}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
@@ -937,7 +956,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `✓ Created document "${args.title}"\n\nID: ${result.data._id}`,
+              text: `✓ Created document "${args.title}"\n\nID: ${getId(result.data)}`,
             },
           ],
         };
