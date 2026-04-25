@@ -51,6 +51,67 @@ const headers = {
 // API CLIENT
 // =============================================================================
 
+/**
+ * Builds a user-facing Error from an HTTP error response.
+ *
+ * Behavior contract:
+ *   - 401/403/404/429: emit a friendly category prefix + the server-supplied
+ *     message when present (preserves actionable backend diagnostics like
+ *     "Token expired", "Try again in 60s", "Document not found"). The 404
+ *     category prefix intentionally contains the literal substring
+ *     "Resource not found." so existing idempotent-delete handlers that
+ *     match /not found/i continue to work until they migrate to
+ *     `error.statusCode === 404` (TDD-M2).
+ *   - 5xx (TDD-H7 — defense against smoke B-09 stack-trace leak): NEVER
+ *     forward the server-supplied body to the client. Log it server-side
+ *     for operators, return an opaque message.
+ *   - 4xx other than the named categories: prefer the parsed server
+ *     message; fall back to "API error: <status> <statusText>".
+ *
+ * The thrown Error carries `.statusCode` so downstream handlers can switch
+ * on the HTTP status without parsing the message string (TDD-M2).
+ */
+function buildApiError(status, parsedBody, statusText) {
+  const serverMsg =
+    parsedBody?.error?.message ??
+    parsedBody?.message ??
+    (typeof parsedBody?.error === "string" ? parsedBody.error : null);
+
+  let userMsg;
+  if (status === 401) {
+    userMsg = serverMsg
+      ? `Authentication failed: ${serverMsg}`
+      : "Authentication failed. Check your API key.";
+  } else if (status === 403) {
+    userMsg = serverMsg
+      ? `Permission denied: ${serverMsg}`
+      : "Permission denied. Your API key may not have the required permissions.";
+  } else if (status === 404) {
+    userMsg = serverMsg
+      ? `Resource not found. ${serverMsg}`
+      : "Resource not found. Check that the ID is correct.";
+  } else if (status === 429) {
+    userMsg = serverMsg
+      ? `Rate limit exceeded. ${serverMsg}`
+      : "Rate limit exceeded. Please wait a moment before retrying.";
+  } else if (status >= 500) {
+    // TDD-H7: never forward 5xx body content to the client.
+    // Log server-side for operators; return opaque message.
+    console.error(
+      `[API ${status}] ${statusText} — server body: ${
+        serverMsg ?? (parsedBody ? JSON.stringify(parsedBody) : "<no body>")
+      }`,
+    );
+    userMsg = `Server error (status ${status}). Please retry shortly.`;
+  } else {
+    userMsg = serverMsg ?? `API error: ${status} ${statusText}`;
+  }
+
+  const err = new Error(userMsg);
+  err.statusCode = status;
+  return err;
+}
+
 async function apiRequest(method, path, body = null) {
   const url = `${API_BASE_URL}${path}`;
   const options = { method, headers };
@@ -65,31 +126,14 @@ async function apiRequest(method, path, body = null) {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      let errorMessage = `API error: ${response.status} ${response.statusText}`;
-
+      let parsedBody = null;
       try {
-        const errorData = await response.json();
-        if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        }
+        parsedBody = await response.json();
       } catch {
-        // Response body is not JSON
+        // Response body is not JSON — leave parsedBody null.
       }
 
-      if (response.status === 401) {
-        throw new Error("Authentication failed. Check your API key.");
-      }
-      if (response.status === 403) {
-        throw new Error("Permission denied. Your API key may not have the required permissions.");
-      }
-      if (response.status === 404) {
-        throw new Error("Resource not found. Check that the ID is correct.");
-      }
-      if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a moment before retrying.");
-      }
-
-      throw new Error(errorMessage);
+      throw buildApiError(response.status, parsedBody, response.statusText);
     }
 
     if (response.status === 204) {
