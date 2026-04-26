@@ -369,13 +369,13 @@ const TOOLS = [
     name: "get_collection",
     description:
       "Get details of a specific collection including its items. Returns the collection's name, " +
-      "description, color, icon, and optionally all prompts and documents it contains. " +
-      "Set includeItems to true to retrieve the full membership list.",
+      "description, color, icon, and (by default) the prompts and documents it contains. " +
+      "Set includeItems to false to retrieve only the metadata without the membership list.",
     inputSchema: {
       type: "object",
       properties: {
         collectionId: { type: "string", description: "The unique ID of the collection" },
-        includeItems: { type: "boolean", description: "Include list of items in the collection (default: false)" },
+        includeItems: { type: "boolean", description: "Include list of items in the collection (default: true)" },
       },
       required: ["collectionId"],
     },
@@ -671,9 +671,16 @@ const TOOLS = [
 
   {
     name: "deep_expand",
+    // M-050 (2026-04-26) — synced with httpStreamableServer description at
+    // app/[transport]/route.ts:1422 to surface the M-046/M-047 sparse-
+    // hierarchy fallback behavior so callers know `surrounding` works on
+    // heading-per-paragraph documents without manual count tuning.
     description:
       "Navigate the document hierarchy from a chunk in 5 directions: up (parent), down (children), " +
-      "next (next sibling), previous (previous sibling), surrounding (context window of nearby siblings). " +
+      "next (next sibling under the same parent), previous (previous sibling under the same parent), " +
+      "surrounding (context window — same-parent siblings; on sparse hierarchies where the target is " +
+      "the only child under its parent, surrounding automatically falls back to the last/first chunks " +
+      "of the parent's prev/next sibling sections so callers still get meaningful neighbouring context). " +
       "Use after deep_search to explore related content without re-searching. Pass any chunkId from " +
       "deep_search or a previous deep_expand call. Use deep_read on any returned chunk for full metadata.",
     inputSchema: {
@@ -690,7 +697,7 @@ const TOOLS = [
         },
         count: {
           type: "number",
-          description: "Number of chunks to return (optional, server default applies)",
+          description: "Number of neighbours per side (default: 2). surrounding returns up to (target + count before + count after).",
         },
       },
       required: ["chunkId", "direction"],
@@ -894,7 +901,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await apiRequest("GET", `/v1/collections/${args.collectionId}`);
         let response = result.data;
 
-        if (args.includeItems) {
+        // M-050 (2026-04-26) — default `includeItems` to true so this CLI
+        // matches the httpStreamableServer behavior at app/[transport]/route.ts:739
+        // (`if (args.includeItems !== false)`). The two clients previously
+        // diverged: the streaming server fetched items by default, this CLI
+        // skipped them by default, so the same `get_collection` call against
+        // the same collection returned different shapes depending on which
+        // client a user was on. Explicit `includeItems: false` opts out.
+        if (args.includeItems !== false) {
           const items = await apiRequest("GET", `/v1/collections/${args.collectionId}/items?limit=50`);
           response = { ...response, items: items.data };
         }
@@ -1338,8 +1352,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             `- **Document:** ${chunk.documentTitle} (${chunk.documentId})`,
           ];
 
-          if (chunk.parentChunkId) {
-            lines.push(`- **Parent:** ${chunk.parentChunkId}`);
+          // M-049 (2026-04-26) — server-side `expandChunk` (convex/pdHttp.ts
+          // expandedChunkValidator) emits the parent linkage as `parentId`.
+          // Earlier versions of this formatter read `chunk.parentChunkId`,
+          // which always resolved to `undefined`, so the "Parent:" line
+          // silently never rendered for any direction. The wire contract is
+          // verified in convex/pdHttp.ts line 27 and convex/progressiveSearch.ts
+          // line 280 — both deep_search and deep_expand emit `parentId`;
+          // only deep_read uses the nested `position.parentChunkId` shape.
+          if (chunk.parentId) {
+            lines.push(`- **Parent:** ${chunk.parentId}`);
           }
 
           lines.push(`- **Content:** ${chunk.content}`);

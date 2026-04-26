@@ -128,4 +128,23 @@ describe('tools/list — exact 26-tool contract pinned (R-11)', () => {
       }
     }
   });
+
+  // ===========================================================================
+  // M-050 — deep_expand description must surface the M-046/M-047 sparse-
+  // hierarchy fallback so MCP clients (and ChatGPT/Claude users reading the
+  // tool description) know `surrounding` works without manual count tuning
+  // on heading-per-paragraph documents. The httpStreamableServer already
+  // carries this wording at app/[transport]/route.ts:1422; this test pins
+  // the npm CLI to the same contract.
+  // ===========================================================================
+  it('deep_expand description documents the sparse-hierarchy surrounding fallback (M-050)', async () => {
+    const result = await listToolsHandler({});
+    const deepExpand = result.tools.find((t) => t.name === 'deep_expand');
+
+    expect(deepExpand).toBeDefined();
+    expect(deepExpand.description).toContain('sparse hierarchies');
+    expect(deepExpand.description).toContain("parent's prev/next sibling sections");
+    expect(deepExpand.inputSchema.properties.count.description).toContain('Number of neighbours per side');
+    expect(deepExpand.inputSchema.properties.count.description).toContain('default: 2');
+  });
 });

@@ -97,14 +97,18 @@ function setupFetch(...responses) {
   });
 }
 
-// Sample expand API response chunk (uses _id per Convex convention)
+// Sample expand API response chunk (uses _id per Convex convention).
+// M-049 (2026-04-26) — the server emits `parentId` (not `parentChunkId`)
+// for both deep_search and deep_expand; only deep_read uses the nested
+// `position.parentChunkId` shape. See convex/pdHttp.ts expandedChunkValidator
+// and convex/progressiveSearch.ts line 280.
 function makeMockChunk(overrides = {}) {
   return {
     _id: 'chunk_abc123',
     content: 'This is chunk content for testing.',
     level: 'section',
     chunkIndex: 0,
-    parentChunkId: 'chunk_parent1',
+    parentId: 'chunk_parent1',
     documentId: 'doc_xyz789',
     documentTitle: 'Test Document',
     ...overrides,
@@ -329,7 +333,7 @@ describe('deep_expand response formatting per direction (VAL-EXPAND-004)', () =>
             content: 'Full content for fields test',
             level: 'section',
             chunkIndex: 3,
-            parentChunkId: 'chunk_p',
+            parentId: 'chunk_p',
             documentId: 'doc_123',
             documentTitle: 'Fields Test Doc',
           })],
@@ -623,25 +627,116 @@ describe('deep_expand MCP response envelope (VAL-CROSS-004)', () => {
 });
 
 // =============================================================================
-// TDD-M1: Parent field name regression (R-08)
+// M-049 / TDD-M1: Parent field name contract (R-08)
 //
 // The server's /v1/pd/expand endpoint emits each chunk's parent reference as
 // `parentId` (matching the documented contract and what deep_search returns
-// at line ~1231 of src/index.js). The current deep_expand formatter reads
+// at line ~1231 of src/index.js). Until M-049 the deep_expand formatter read
 // `chunk.parentChunkId` (line ~1341), so the "Parent:" line silently never
-// renders against real server payloads — only mocks that mimic the wrong
-// field shape (like the existing tests above) ever exercise that branch.
+// rendered against real server payloads — only mocks that mimicked the wrong
+// field shape ever exercised that branch.
 //
 // These tests pin the CONTRACT: when the server provides a parent reference
 // under the documented `parentId` key, the formatted output must include the
-// "Parent:" line with that ID.
+// "Parent:" line with that ID; when neither key is present, the line must be
+// omitted entirely (no "- **Parent:** undefined" leakage).
 //
-// Status: marked .todo for v1.5.0 (M-tier, not blocking the H-tier release).
-// To activate in v1.5.1: change `it.todo` -> `it`, change the formatter to
-// read `chunk.parentId` (or extend `getId` semantics), and run the suite.
+// Wire-contract source-of-truth references:
+//   - convex/pdHttp.ts line 27 (expandedChunkValidator) — emits `parentId`.
+//   - convex/progressiveSearch.ts line 280 — deep_search also emits `parentId`.
+//   - convex/pdHttp.ts line 254 — deep_read uses `position.parentChunkId`
+//     (nested), which is a separate code path and not exercised here.
 // =============================================================================
-describe('deep_expand parent field contract (TDD-M1, R-08)', () => {
-  it.todo('should render Parent line from server-emitted parentId (not parentChunkId)');
-  it.todo('should render Parent line for "up" direction when parentId is present');
-  it.todo('should omit Parent line when neither parentId nor parentChunkId is set');
+describe('deep_expand parent field contract (M-049 / TDD-M1, R-08)', () => {
+  it('should render Parent line from server-emitted parentId (not parentChunkId)', async () => {
+    setupFetch(
+      mockFetchResponse(200, {
+        data: {
+          chunks: [
+            {
+              _id: 'chunk_target',
+              content: 'Target paragraph under section A.',
+              level: 'paragraph',
+              chunkIndex: 1,
+              // Server emits parentId per the wire contract; explicitly
+              // exclude parentChunkId to prove the formatter doesn't depend
+              // on the legacy/wrong field name.
+              parentId: 'chunk_section_a',
+              documentId: 'doc_1',
+              documentTitle: 'M-049 Doc',
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await callTool('deep_expand', {
+      chunkId: 'chunk_seed',
+      direction: 'next',
+    });
+    const text = result.content[0].text;
+
+    expect(text).toContain('- **Parent:** chunk_section_a');
+    expect(text).not.toContain('undefined');
+  });
+
+  it('should render Parent line for "up" direction when parentId is present', async () => {
+    setupFetch(
+      mockFetchResponse(200, {
+        data: {
+          chunks: [
+            {
+              _id: 'chunk_section_a',
+              content: 'Parent section A heading.',
+              level: 'section',
+              chunkIndex: 0,
+              parentId: 'chunk_doc_root',
+              documentId: 'doc_1',
+              documentTitle: 'M-049 Doc',
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await callTool('deep_expand', {
+      chunkId: 'chunk_target',
+      direction: 'up',
+    });
+    const text = result.content[0].text;
+
+    expect(text).toContain('- **Parent:** chunk_doc_root');
+    expect(text).not.toContain('undefined');
+  });
+
+  it('should omit Parent line when neither parentId nor parentChunkId is set', async () => {
+    setupFetch(
+      mockFetchResponse(200, {
+        data: {
+          chunks: [
+            {
+              _id: 'chunk_root',
+              content: 'Top-level / orphan chunk content.',
+              level: 'document',
+              chunkIndex: 0,
+              // Intentionally omit BOTH parent fields — formatter must not
+              // emit a "- **Parent:**" line at all (no "undefined" leakage,
+              // no empty value).
+              documentId: 'doc_1',
+              documentTitle: 'M-049 Doc',
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await callTool('deep_expand', {
+      chunkId: 'chunk_root',
+      direction: 'up',
+    });
+    const text = result.content[0].text;
+
+    expect(text).not.toContain('Parent:');
+    expect(text).not.toContain('undefined');
+  });
 });
