@@ -1338,8 +1338,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             `- **Document:** ${chunk.documentTitle} (${chunk.documentId})`,
           ];
 
-          if (chunk.parentChunkId) {
-            lines.push(`- **Parent:** ${chunk.parentChunkId}`);
+          // M-049 (2026-04-26) — server-side `expandChunk` (convex/pdHttp.ts
+          // expandedChunkValidator) emits the parent linkage as `parentId`.
+          // Earlier versions of this formatter read `chunk.parentChunkId`,
+          // which always resolved to `undefined`, so the "Parent:" line
+          // silently never rendered for any direction. The wire contract is
+          // verified in convex/pdHttp.ts line 27 and convex/progressiveSearch.ts
+          // line 280 — both deep_search and deep_expand emit `parentId`;
+          // only deep_read uses the nested `position.parentChunkId` shape.
+          if (chunk.parentId) {
+            lines.push(`- **Parent:** ${chunk.parentId}`);
           }
 
           lines.push(`- **Content:** ${chunk.content}`);
