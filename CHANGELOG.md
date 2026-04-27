@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-04-26
+
+### Fixed
+- **`get_document_versions` now surfaces a real version ID per row (F-1).** Pre-1.5.2 the formatter at `src/index.js:1086` read `v._id` directly, but the server returns the canonical `{id, version, ...}` shape (`convex/http.ts` documents-versions handler), so every row rendered as `**ID:** undefined`. The shared `getId(v)` helper (introduced in 1.5.0) now backs this row, mirroring the `get_prompt_versions` fix shipped in 1.5.0 (TDD-H2). Restoring a specific historical version via `restore_document_version` now works end-to-end through the MCP surface; previously callers could only restore by guessing the ID from the Convex dashboard.
+
+### Changed
+- **`update_prompt` description tightened to reflect actual version-bump behavior (F-2).** The previous wording ("Each update automatically creates a new version") was true for the npm CLI's POV but masked the server-side rule that only `content` changes trigger a new version. Title-only and description-only updates do not bump the version. Description now states this explicitly so MCP clients (and ChatGPT/Claude users reading the tool list) set correct expectations.
+- **`update_document` description tightened the same way (F-2).** Title-only updates do not bump the version; only `content` updates create a new version and re-trigger semantic-search re-indexing.
+- **All five collection-write tools now document the `documents.write` API key scope requirement (F-3).** `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, and `remove_from_collection` are gated by the same scope as documents on the server side, but the tool descriptions never advertised this. Users hitting a 403 from a `prompts.write`-only key had no way to debug from the MCP surface alone. Each description now ends with: `"Requires `documents.write` API key scope (collections are gated by the same scope as documents)."`
+
+### Added
+- **`src/__tests__/get-document-versions.test.js`** — 5 new contract tests pinning F-1: real-ID rendering on canonical `{id}` shape, `(Current)` marker on the first row, `_id` legacy fallback (so the next backend rename does not silently break us again), `id` over `_id` preference, and the no-history empty-array path. Mirrors the `get-prompt-versions.test.js` pattern from 1.5.0.
+- Test totals: **211 passed, 4 skipped** (was 206 + 5 new = 211).
+
+### Notes
+- This release contains **npm-package-only changes**. There are no Convex backend changes in 1.5.2; the canonical `{id}` shape was already shipped in the 9054a43 sanitization release (PR #135) on the server side, and the F-1 / F-2 / F-3 dual-codebase fix shipped on the streaming `app/[transport]/route.ts` server in PR #136 (1108c9e). 1.5.2 brings the npm CLI to parity.
+- F-1 was found during a 26-tool MCP pre-launch lifecycle audit on 2026-04-26 (`docs/2026-04-27-mcp-pre-launch-findings-f-1-f-2-f-3-single-pr-three-commits.md` in the `GitMaxd-Prompts` repo); the audit initially pinned the bug to `app/[transport]/route.ts` but the npm CLI carries an independent copy of the formatter that needed the same fix.
+- F-2 / F-3 are docstring-only clarifications. No behavior change in tool execution, only in how clients describe the tools.
+
 ## [1.5.1] - 2026-04-26
 
 ### Fixed
