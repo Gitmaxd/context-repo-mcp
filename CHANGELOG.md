@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-04-26
+
+### Fixed
+- **`deep_expand` now renders the `Parent:` line in tool output (M-049, TDD-M1, R-08).** The server's `/v1/pd/expand` endpoint emits each chunk's parent linkage as `parentId` (per `convex/pdHttp.ts` `expandedChunkValidator`), but the formatter at `src/index.js:1341` previously read `chunk.parentChunkId`. The field-name mismatch meant the `if` branch never fired against real server payloads and the `Parent:` line silently never appeared. Three new contract tests pin the fix and the previously deferred `it.todo` placeholders are now real, passing tests.
+
+### Changed
+- **`get_collection.includeItems` default flipped to `true` to match the streaming MCP server (M-050).** Pre-1.5.1 the npm CLI defaulted to `false` while `httpStreamableServer` (`app/[transport]/route.ts:739`) defaulted to `true`, so the same `get_collection` call against the same collection returned different shapes depending on which client a user was on. Now both clients agree: items are included by default; callers wanting metadata only must pass `includeItems: false` explicitly. Tool-schema description updated to advertise the new default.
+- **`deep_expand` description refreshed to surface the M-046 / M-047 sparse-hierarchy `surrounding` fallback (M-050).** The streaming server's wording was updated when those fixes shipped; the npm CLI description was never synced. Both the top-level description and the `count` arg description now match `route.ts` so MCP clients reading the tool list see the correct behavior.
+
+### Added
+- **`src/__tests__/get-collection.test.js`** — 5 new tests pinning omit / `true` / `false` fetch behavior plus tool-schema description assertions.
+- **+1 assertion in `src/__tests__/tool-list-snapshot.test.js`** pinning the refreshed `deep_expand` description so future drift is caught at CI.
+- Test totals: **206 passed, 4 skipped** (was 197 + 9 new = 206).
+
+### Notes
+- This release contains npm-package-only changes. There are **no Convex backend changes** in 1.5.1.
+- Behavior change for `get_collection.includeItems` default is technically a minor-bump signal under strict semver, but per pre-launch project calibration (zero published-package users hitting it yet) this is shipped as a patch alongside the M-049 fix. Future API behavior changes will follow strict semver as user uptake grows.
+- Cross-implementation audit details: `GitMaxd-Prompts/docs/API-Reports/2026-04-26-mcp-cross-implementation-audit.md`.
+
 ## [1.5.0] - 2026-04-24
 
 ### Fixed
