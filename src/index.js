@@ -265,7 +265,7 @@ const TOOLS = [
   {
     name: "create_prompt",
     description:
-      "Create a new prompt template. Prompts can include variables using ${variableName} syntax. " +
+      "Create a new prompt template. " +
       "Requires title, description, content, and target engine. The created prompt is immediately " +
       "available via search_prompts and find_items, and can be organized into collections with add_to_collection.",
     inputSchema: {
@@ -273,7 +273,7 @@ const TOOLS = [
       properties: {
         title: { type: "string", description: "Title of the prompt" },
         description: { type: "string", description: "Brief description of what the prompt does" },
-        content: { type: "string", description: "The prompt template content. Use ${variableName} for variables." },
+        content: { type: "string", description: "The prompt template content (free-form text)." },
         engine: { type: "string", description: "Target AI model (e.g., 'gpt-4', 'claude-3', 'gemini-pro')" },
       },
       required: ["title", "description", "content", "engine"],
@@ -594,7 +594,8 @@ const TOOLS = [
       "Use this to locate items by topic, find what exists in your workspace, or narrow down to a " +
       "specific prompt/document/collection before operating on it. Supports filtering by type " +
       "(prompts, documents, collections) and toggling between semantic (default) and literal matching " +
-      "modes. For deep exploration of document content with hierarchical navigation, use deep_search instead.",
+      "modes. Literal mode (semantic=false) searches titles, descriptions, and the first ~4 KiB of " +
+      "document content; for full body-text search use deep_search.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1131,7 +1132,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("GET", `/v1/search?${params}`);
 
-        // Format results similar to App MCP Server
+        // Format results similar to App MCP Server. The (id: ...) token is
+        // additive — every previously present field stays in place, so external
+        // markdown parsers do not break. Surfaces IDs the REST layer already
+        // returns so agents do not need a follow-up list_*/search_* round-trip.
         const sections = [];
         const isSemantic = Boolean(result.meta?.semantic);
 
@@ -1139,10 +1143,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           sections.push(
             `### Prompts (${result.data.prompts.length})\n${result.data.prompts
               .map((p) => {
+                const id = String(p.promptId ?? "");
+                const desc = p.description?.slice(0, 100) || "";
+                const ellipsis = p.description?.length > 100 ? "..." : "";
                 if (isSemantic && typeof p.score === "number") {
-                  return `- **${p.title}** (score: ${p.score.toFixed(2)}) - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`;
+                  return `- **${p.title}** (id: ${id}, score: ${p.score.toFixed(2)}) - ${desc}${ellipsis}`;
                 }
-                return `- **${p.title}** - ${p.description?.slice(0, 100) || ""}${p.description?.length > 100 ? "..." : ""}`;
+                return `- **${p.title}** (id: ${id}) - ${desc}${ellipsis}`;
               })
               .join("\n")}`
           );
@@ -1152,10 +1159,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           sections.push(
             `### Documents (${result.data.documents.length})\n${result.data.documents
               .map((d) => {
+                const id = String(d.documentId ?? "");
                 if (isSemantic && typeof d.score === "number") {
-                  return `- **${d.title}** (score: ${d.score.toFixed(2)})`;
+                  return `- **${d.title}** (id: ${id}, score: ${d.score.toFixed(2)})`;
                 }
-                return `- **${d.title}**`;
+                return `- **${d.title}** (id: ${id})`;
               })
               .join("\n")}`
           );
@@ -1165,12 +1173,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           sections.push(
             `### Collections (${result.data.collections.length})\n${result.data.collections
               .map((c) => {
+                const id = String(c.collectionId ?? "");
                 if (isSemantic && typeof c.score === "number") {
                   const matchedItems = typeof c.matchedItems === "number" ? `, ${c.matchedItems} matched items` : "";
-                  return `- **${c.name}** (score: ${c.score.toFixed(2)}${matchedItems})`;
+                  return `- **${c.name}** (id: ${id}, score: ${c.score.toFixed(2)}${matchedItems})`;
                 }
                 const description = c.description ? ` - ${c.description}` : "";
-                return `- **${c.name}**${description}`;
+                return `- **${c.name}** (id: ${id})${description}`;
               })
               .join("\n")}`
           );
