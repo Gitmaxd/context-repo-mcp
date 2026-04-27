@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] - 2026-04-27
+
+### Fixed
+- **`find_items` markdown output now surfaces `promptId` / `documentId` / `collectionId` per result line (M1, claim #4).** The streaming MCP server at `app/[transport]/route.ts:996-1028` and the npm CLI at `src/index.js:1141-1184` both formatted `find_items` results without IDs, contradicting the tool description's promise that the tool "returns titles, IDs, and relevance scores." Agents reading a `find_items` result then had to issue a second `list_*` / `search_*` call just to recover the ID. Each prompt / document / collection list line now includes an `(id: ...)` token, parenthesized to mirror the existing `(score: ...)` pattern. The change is **additive** — every previously rendered field stays in place, so external markdown parsers continue to work. Mirrors `Gitmaxd/gitmaxd-prompts` PR #139 (merge `e1416f5`).
+
+### Changed
+- **`create_prompt` description no longer claims `${variableName}` extraction (M1, claim #2).** The prose at `src/index.js:268` and `:276`, plus the tool short-description in `claude-extension/manifest.json`, advertised that the tool would parse `${variableName}` placeholders out of `content`. No layer in the system did so — the `prompts` table at `convex/schema.ts:36-40` stores `variables` as a user-curated `{ name, type, description? }[]` array, and neither the streaming MCP nor the npm CLI ever populated that array from `content`. Per Owner Q1 the schema's intent is the truth and the description was the lie; the prose now reads "Create a new prompt template." with `content` described as "(free-form text)." Existing `variables` round-trips on read are unaffected.
+- **`find_items` description now discloses the 4 KiB literal-mode body-search cap (M1, claim #3).** Documents are FTS-indexed on `contentPreview` (capped at `MAX_CONTENT_PREVIEW_BYTES = 4_096` per `convex/lib/requestLimits.ts:82`), so unique tokens past byte 4096 of a long document are invisible to `find_items` literal mode even though `deep_search` (vector embeddings, full body) sees them. Per Owner Q2 the cap is a permanent design — the description now reads: "Literal mode (semantic=false) searches titles, descriptions, and the first ~4 KiB of document content; for full body-text search use deep_search." Steers callers to `deep_search` for full-body recall. No behavior change.
+
+### Notes
+- This release contains **npm-package-only changes**. The streaming MCP server (`app/[transport]/route.ts` in `Gitmaxd/gitmaxd-prompts`) shipped the same three fixes in PR #139 (merge `e1416f5`, 2026-04-27). 1.5.3 brings the npm CLI to parity so Claude Desktop `.mcpb` users see the corrected descriptions and ID-surfaced output.
+- M1 source: `docs/MCP-Extension-Smoke-Test-Forensic-Verification-2026-04-27.md` (4-agent forensic report). Spec: `docs/mission-M1-mcp-pre-launch-honesty.md`. Owner answers locked the scope to Option A on Q1 (description honesty, no extraction feature) and "permanent design" on Q2 (no full-content FTS index).
+- No new tests in this release. The streaming-MCP PR shipped 10 unit tests against an extracted formatter helper at `app/[transport]/find-items-formatter.ts`; the npm CLI's formatter remains inline (no extracted helper) per pre-launch policy ("do not over-engineer"). All 211 existing tests pass (4 skipped, unchanged from 1.5.2).
+
 ## [1.5.2] - 2026-04-26
 
 ### Fixed

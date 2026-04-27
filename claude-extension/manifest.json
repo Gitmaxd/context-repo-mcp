@@ -60,7 +60,7 @@
     },
     {
       "name": "create_prompt",
-      "description": "Create a new prompt template with variables using ${variableName} syntax"
+      "description": "Create a new prompt template"
     },
     {
       "name": "update_prompt",
