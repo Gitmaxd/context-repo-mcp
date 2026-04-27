@@ -195,7 +195,7 @@ function getId(obj) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.5.1",
+    version: "1.5.2",
   },
   {
     capabilities: {
@@ -283,8 +283,9 @@ const TOOLS = [
     name: "update_prompt",
     description:
       "Update an existing prompt. Only provide the fields you want to change. " +
-      "Each update automatically creates a new version in the prompt's history, which can be " +
-      "reviewed with get_prompt_versions and rolled back with restore_prompt_version.",
+      "Updates that modify `content` create a new version in the prompt's history " +
+      "(reviewable with get_prompt_versions, rollbackable with restore_prompt_version). " +
+      "Title-only or description-only updates do not bump the version.",
     inputSchema: {
       type: "object",
       properties: {
@@ -385,7 +386,8 @@ const TOOLS = [
     description:
       "Create a new collection to organize prompts and documents. Collections act as folders " +
       "with optional color and emoji icon for visual organization. After creation, use " +
-      "add_to_collection to populate it with existing prompts or documents.",
+      "add_to_collection to populate it with existing prompts or documents. " +
+      "Requires `documents.write` API key scope (collections are gated by the same scope as documents).",
     inputSchema: {
       type: "object",
       properties: {
@@ -402,7 +404,8 @@ const TOOLS = [
     description:
       "Update a collection's metadata. Change the collection's name, description, color code, " +
       "or emoji icon. Only provide the fields you want to change. Does not affect the " +
-      "prompts and documents inside the collection.",
+      "prompts and documents inside the collection. " +
+      "Requires `documents.write` API key scope (collections are gated by the same scope as documents).",
     inputSchema: {
       type: "object",
       properties: {
@@ -420,7 +423,8 @@ const TOOLS = [
     description:
       "Delete a collection. Items in the collection are NOT deleted -- only the organizational " +
       "folder is removed. The prompts and documents that were in the collection remain " +
-      "accessible via search_prompts, list_documents, and find_items.",
+      "accessible via search_prompts, list_documents, and find_items. " +
+      "Requires `documents.write` API key scope (collections are gated by the same scope as documents).",
     inputSchema: {
       type: "object",
       properties: {
@@ -434,7 +438,8 @@ const TOOLS = [
     description:
       "Add documents or prompts to a collection. Specify the collectionId, an array of item IDs, " +
       "and whether they are 'document' or 'prompt' type. Items can belong to multiple collections. " +
-      "Returns counts of items added and items already in the collection.",
+      "Returns counts of items added and items already in the collection. " +
+      "Requires `documents.write` API key scope (collections are gated by the same scope as documents).",
     inputSchema: {
       type: "object",
       properties: {
@@ -450,7 +455,8 @@ const TOOLS = [
     description:
       "Remove documents or prompts from a collection. This only removes the association -- " +
       "the items themselves are not deleted and remain accessible. Specify the collectionId, " +
-      "an array of item IDs, and whether they are 'document' or 'prompt' type.",
+      "an array of item IDs, and whether they are 'document' or 'prompt' type. " +
+      "Requires `documents.write` API key scope (collections are gated by the same scope as documents).",
     inputSchema: {
       type: "object",
       properties: {
@@ -512,8 +518,9 @@ const TOOLS = [
     name: "update_document",
     description:
       "Update an existing document. Only provide fields you want to change. " +
-      "Each update automatically creates a new version in the document's history and triggers " +
-      "re-indexing for semantic search. Use get_document_versions to review changes.",
+      "Updates that modify `content` create a new version in the document's history " +
+      "(reviewable with get_document_versions) and trigger re-indexing for semantic search. " +
+      "Title-only updates do not bump the version.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1083,7 +1090,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           .map(
             (v, i) =>
               `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
-              `- **ID:** ${v._id}\n` +
+              `- **ID:** ${getId(v)}\n` +
               `- **Title:** ${v.title}\n` +
               `- **Changed by:** ${v.userName || "Unknown"}\n` +
               `- **Change log:** ${v.changeLog || "No description"}\n` +
@@ -1430,7 +1437,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.5.1                   ║");
+  console.error("║              Context Repo MCP Server v1.5.2                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
