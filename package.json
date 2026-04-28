@@ -1,6 +1,6 @@
 {
   "name": "context-repo-mcp",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "MCP Server for Context Repo - connect any MCP client to your prompts, documents, and collections",
   "type": "module",
   "main": "src/index.js",
@@ -17,13 +17,25 @@
     "mcp",
     "model-context-protocol",
     "context-repo",
+    "contextrepo",
+    "contextrepo.com",
     "ai",
     "prompts",
+    "prompt-management",
+    "prompt-versioning",
+    "knowledge-base",
+    "rag",
     "claude",
     "cursor",
-    "factory-droid"
+    "factory-droid",
+    "chatgpt",
+    "windsurf"
   ],
-  "author": "Context Repo",
+  "author": {
+    "name": "Context Repo",
+    "email": "support@contextrepo.com",
+    "url": "https://contextrepo.com"
+  },
   "license": "MIT",
   "files": [
     "src",
@@ -38,7 +50,7 @@
   "bugs": {
     "url": "https://github.com/Gitmaxd/context-repo-mcp/issues"
   },
-  "homepage": "https://github.com/Gitmaxd/context-repo-mcp#readme",
+  "homepage": "https://contextrepo.com",
   "engines": {
     "node": ">=18.0.0"
   },
