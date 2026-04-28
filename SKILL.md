@@ -1,6 +1,21 @@
 ---
 name: context-repo-mcp
-description: Search, retrieve, version, and persist AI prompt templates, documents, and collections via the Context Repo MCP server.
+description: >
+  Search, retrieve, version, and persist AI prompt templates, documents,
+  and collections in the user's Context Repo account
+  (https://contextrepo.com) via the official MCP server. Use this skill
+  whenever the user mentions their saved prompts, prompt library, prompt
+  templates, system prompts, "context repo", contextrepo, or wants to
+  find, save, version, restore, or share a reusable prompt or document
+  across their AI tools — even when they don't explicitly say "skill"
+  or "MCP". Trigger on phrases like "find my prompt for ...", "use the
+  system prompt I saved as ...", "save this as a reusable prompt",
+  "what prompts do I have about ...", "version this prompt", "restore
+  the previous version of ...", "search my context repo for ...", or
+  "sync this prompt to my Cursor / Claude / ChatGPT setup". Also
+  trigger when the user wants to navigate large documents
+  hierarchically (deep_search -> deep_read -> deep_expand) or perform
+  semantic search across their stored knowledge base.
 version: 1.5.4
 license: MIT
 homepage: https://contextrepo.com
@@ -15,41 +30,82 @@ auth:
 tags:
   - mcp
   - prompts
-  - knowledge
+  - prompt-management
+  - knowledge-base
   - rag
-  - context
   - claude
   - cursor
-  - factory
+  - factory-droid
   - chatgpt-apps
 ---
 
-## What this skill does
+# context-repo-mcp
 
-Connects an AI agent or coding assistant to a **Context Repo** account
-(https://contextrepo.com) so the agent can:
+Connect to a [Context Repo](https://contextrepo.com) account and act
+on the user's saved prompts, documents, and collections through 28
+MCP tools. The Context Repo platform stores reusable prompt
+templates with version history, markdown documents with hierarchical
+search, and collection-based organization — this skill is the
+agent's read/write interface to that storage.
 
-- **Find prompts by name or topic** with semantic and literal search.
-- **Retrieve versioned prompt templates** with full history.
-- **Persist new prompts or documents** so they can be reused across
-  every MCP-compatible tool (Claude Desktop, Cursor, ChatGPT Apps,
-  Factory Droid, Windsurf, VS Code, etc.).
-- **Navigate large documents** via hierarchical chunk APIs
-  (`deep_search` -> `deep_read` -> `deep_expand`).
+## Capabilities
 
-The skill exposes **28 MCP tools** under one server connection.
+Use these tool families for the corresponding intents:
 
-## When to invoke this skill
+- **Prompt retrieval** — `search_prompts`, `read_prompt`,
+  `find_items` (semantic + literal cross-content search).
+- **Prompt creation and versioning** — `create_prompt`,
+  `update_prompt`, `get_prompt_versions`, `restore_prompt_version`,
+  `delete_prompt`.
+- **Document storage** — `list_documents`, `get_document`,
+  `create_document`, `update_document`, `delete_document`,
+  `get_document_versions`, `restore_document_version`.
+- **Collection organization** — `list_collections`, `get_collection`,
+  `create_collection`, `update_collection`, `delete_collection`,
+  `add_to_collection`, `remove_from_collection`.
+- **Hierarchical document navigation** — `deep_search` -> `deep_read`
+  -> `deep_expand` (vector-backed chunk retrieval with parent /
+  sibling navigation across `up`, `down`, `next`, `previous`,
+  `surrounding` directions).
+- **Account info** — `get_user_info`.
 
-Trigger this skill when the agent's task includes phrases like:
+## Tool inventory (28 tools, snake_case)
 
-- "find my prompt for ..."
-- "use the system prompt I saved as ..."
-- "save this as a reusable prompt"
-- "search my context repo for ..."
-- "what prompts do I have about ..."
-- "version this prompt"
-- "share this prompt with my Cursor / Claude / ChatGPT setup"
+| Category | Tools |
+|---|---|
+| User | `get_user_info` |
+| Prompts | `search_prompts`, `read_prompt`, `create_prompt`, `update_prompt`, `delete_prompt`, `get_prompt_versions`, `restore_prompt_version` |
+| Documents | `list_documents`, `get_document`, `create_document`, `update_document`, `delete_document`, `get_document_versions`, `restore_document_version` |
+| Collections | `list_collections`, `get_collection`, `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, `remove_from_collection` |
+| Cross-search | `find_items`, `deep_search`, `deep_read`, `deep_expand` |
+| OpenAI Apps SDK | `search`, `fetch` |
+
+Read-only tools are annotated with `readOnlyHint: true` so safe-mode
+agents can execute them without write confirmation.
+
+## Output format
+
+Every tool returns an MCP `CallToolResult` of shape
+`{ content: [{ type: "text", text: <string> }] }`. The `text` payload
+format depends on the tool family — agents must dispatch parsing
+accordingly:
+
+- **Read / list / create / update tools** (most tools, e.g.
+  `read_prompt`, `search_prompts`, `list_documents`, `get_collection`,
+  `update_prompt`, `add_to_collection`) return **stringified JSON**
+  (pretty-printed, 2-space indent). Parse with
+  `JSON.parse(result.content[0].text)` to consume.
+- **Delete tools** (`delete_prompt`, `delete_document`,
+  `delete_collection`) return a **plain success or no-op string**:
+  `"✓ Deleted prompt <id>"` or `"<X> was already deleted (no-op)."`.
+  Do not attempt to JSON-parse these.
+- **Search and navigation tools** (`find_items`, `deep_search`,
+  `deep_read`, `deep_expand`, `get_prompt_versions`,
+  `get_document_versions`) return **human-readable markdown**
+  intended for direct surface to the user. IDs needed for follow-up
+  calls are embedded as bullet fields like `**chunkId:** <id>` or
+  `**id:** <id>` — extract via regex when chaining calls.
+- **Errors** return `"Error: <message>"` in the text block.
 
 ## Installation
 
@@ -74,33 +130,20 @@ Or via Claude Desktop's `claude_desktop_config.json`:
 Generate an API key at
 https://contextrepo.com/dashboard/settings.
 
-## Tool inventory
-
-| Category | Tools |
-|---|---|
-| User | `get_user_info` |
-| Prompts | `search_prompts`, `read_prompt`, `create_prompt`, `update_prompt`, `delete_prompt`, `get_prompt_versions`, `restore_prompt_version` |
-| Documents | `list_documents`, `get_document`, `create_document`, `update_document`, `delete_document`, `get_document_versions`, `restore_document_version` |
-| Collections | `list_collections`, `get_collection`, `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, `remove_from_collection` |
-| Cross-search | `find_items`, `deep_search`, `deep_read`, `deep_expand` |
-| OpenAI Apps SDK | `search`, `fetch` |
-
-All tool names use snake_case. Read-only tools are annotated with
-`readOnlyHint: true` so safe-mode agents can execute them without
-write confirmation.
-
 ## Authentication
 
-The skill supports two equivalent auth modes:
+Two equivalent auth modes:
 
-1. **API Key** (recommended for local agents): `Authorization: API-Key gm_...`
+1. **API Key** (recommended for local agents): send
+   `Authorization: API-Key gm_...`. Generate at
+   https://contextrepo.com/dashboard/settings.
 2. **OAuth 2.0** (recommended for hosted MCP clients): Clerk-issued
-   bearer token. Discovery at
+   bearer token. Discover via
    `https://contextrepo.com/.well-known/oauth-protected-resource/mcp`
    (RFC 9728).
 
 The MCP server's `tools/list`, `initialize`, and `*/list` capability
-methods are publicly callable so agents can introspect the skill
+methods are publicly callable, so agents can introspect this skill
 before completing OAuth.
 
 ## Rate limits
@@ -111,43 +154,49 @@ Per authenticated user, sliding window:
 - `api` family: 100 requests / 60s
 - `readonly` family: 120 requests / 60s
 
-`Retry-After` headers on 429.
+Honor `Retry-After` headers on 429 responses.
 
 ## Examples
 
-### Search and retrieve a prompt
+### Find and use a saved prompt
+
+User input: *"find my code review prompt and use it for this PR"*
 
 ```
-> "find my code review prompt and use it for this PR"
-
-agent calls: find_items(query="code review")
-agent calls: read_prompt(promptId="kh7abc")
-agent uses returned prompt body as system message
+1. Call find_items(query="code review")
+2. Parse JSON from content[0].text → extract prompt id from results
+3. Call read_prompt(promptId=<id>)
+4. Parse JSON from content[0].text → use returned `content` field as
+   the system message for the PR review.
 ```
 
-### Save a new template
+### Save a new reusable prompt
+
+User input: *"save this as my standard bug triage prompt"*
 
 ```
-> "save this as my standard bug triage prompt"
-
-agent calls: create_prompt(
-  title="Bug triage",
-  description="Standard bug triage workflow",
-  content="<the prompt>",
-  engine="claude-3"
-)
+1. Call create_prompt(
+     title="Bug triage",
+     description="Standard bug triage workflow",
+     content=<the prompt body>,
+     engine="claude-3"
+   )
+2. Parse JSON from content[0].text → confirm new prompt id to user.
 ```
 
-### Navigate a large document
+### Navigate a large document hierarchically
+
+User input: *"summarize chapter 5 of my onboarding doc"*
 
 ```
-> "summarize chapter 5 of my onboarding doc"
-
-agent calls: deep_search(query="chapter 5 onboarding")
-            -> returns chunkId
-agent calls: deep_read(chunkId="...")
-agent calls: deep_expand(chunkId="...", direction="down")
-            -> returns child chunks for full chapter
+1. Call deep_search(query="chapter 5 onboarding")
+   → returns markdown listing chunks; extract chunkId via
+     `**chunkId:** <id>` line.
+2. Call deep_read(chunkId=<id>)
+   → returns markdown chunk detail with hierarchy.
+3. Call deep_expand(chunkId=<id>, direction="down")
+   → returns child chunks for the full chapter.
+4. Synthesize summary from concatenated chunk content.
 ```
 
 ## Documentation
