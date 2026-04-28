@@ -16,7 +16,7 @@ description: >
   trigger when the user wants to navigate large documents
   hierarchically (deep_search -> deep_read -> deep_expand) or perform
   semantic search across their stored knowledge base.
-version: 1.5.4
+version: 1.5.5
 license: MIT
 homepage: https://contextrepo.com
 repository: https://github.com/Gitmaxd/context-repo-mcp
