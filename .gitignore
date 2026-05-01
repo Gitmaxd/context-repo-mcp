@@ -5,10 +5,3 @@ node_modules/
 .DS_Store
 .factory/
 skills-lock.json
-
-# Claude Desktop Extension build artifacts
-claude-extension/server/
-claude-extension/node_modules/
-claude-extension/package.json
-claude-extension/package-lock.json
-*.mcpb
