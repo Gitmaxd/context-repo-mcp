@@ -4,6 +4,7 @@ node_modules/
 *.log
 .DS_Store
 .factory/
+skills-lock.json
 
 # Claude Desktop Extension build artifacts
 claude-extension/server/
