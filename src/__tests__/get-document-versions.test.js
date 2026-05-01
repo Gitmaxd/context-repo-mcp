@@ -88,7 +88,10 @@ describe('get_document_versions — version ID rendering (F-1)', () => {
     expect(text).not.toMatch(/\*\*ID:\*\*\s*null/);
   });
 
-  it('marks the first row as (Current) and renders Version label correctly', async () => {
+  it('marks the first row as (Latest Snapshot) and renders Version label correctly', async () => {
+    // v2.0.0 changed the latest-row marker from "(Current)" to
+    // "(Latest Snapshot)" to align with the web /mcp surface (locked by
+    // canonical fixture).
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ id: 'dv_curr', version: 3, title: 'doc', userName: 'u', changeLog: 'c', content: 'x' }],
@@ -98,10 +101,10 @@ describe('get_document_versions — version ID rendering (F-1)', () => {
     const result = await callTool('get_document_versions', { documentId: 'd1' });
     const text = result.content[0].text;
 
-    expect(text).toContain('Version 3 (Current)');
+    expect(text).toContain('Version 3 (Latest Snapshot)');
   });
 
-  it('falls back to _id when server returns legacy raw-row shape', async () => {
+  it('preserves _id verbatim in structuredContent when server returns legacy raw-row shape', async () => {
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ _id: 'dv_legacy', version: 1, title: 'doc', userName: 'u', changeLog: 'c', content: 'x' }],
@@ -110,10 +113,10 @@ describe('get_document_versions — version ID rendering (F-1)', () => {
 
     const result = await callTool('get_document_versions', { documentId: 'd1' });
 
-    expect(result.content[0].text).toContain('dv_legacy');
+    expect(result.structuredContent.data[0]._id).toBe('dv_legacy');
   });
 
-  it('prefers id over _id when both are present', async () => {
+  it('renders id (not _id) in markdown when both are present', async () => {
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ id: 'canonical', _id: 'legacy', version: 1, title: 'doc', userName: 'u', changeLog: 'c', content: 'x' }],
@@ -123,7 +126,7 @@ describe('get_document_versions — version ID rendering (F-1)', () => {
     const result = await callTool('get_document_versions', { documentId: 'd1' });
     const text = result.content[0].text;
 
-    expect(text).toContain('canonical');
+    expect(text).toContain('**ID:** canonical');
     expect(text).not.toMatch(/\*\*ID:\*\*\s*legacy/);
   });
 

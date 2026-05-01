@@ -93,7 +93,8 @@ describe('restore_prompt_version — happy path', () => {
 
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain('Successfully restored');
-    expect(result.content[0].text).toContain('New version: 4');
+    // v2.0.0 wording: "New version number: <n>" replaces "New version: <n>".
+    expect(result.content[0].text).toContain('New version number: 4');
   });
 
   it('forwards versionId in the request body to POST /v1/prompts/{id}/restore', async () => {
