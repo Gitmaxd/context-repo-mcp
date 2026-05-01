@@ -71,51 +71,62 @@ describe('search_prompts — id field rendering (TDD-H3)', () => {
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [
-          { id: 'kh7realid001', title: 'Prompt A', description: 'desc A', engine: 'gpt-4' },
-          { id: 'kh7realid002', title: 'Prompt B', description: 'desc B', engine: 'claude-3' },
+          { id: 'kh7realid001', title: 'Prompt A', description: 'desc A', engine: 'gpt-4', currentVersion: 1 },
+          { id: 'kh7realid002', title: 'Prompt B', description: 'desc B', engine: 'claude-3', currentVersion: 1 },
         ],
       })
     );
 
     const result = await callTool('search_prompts', {});
     const text = result.content[0].text;
-    const parsed = JSON.parse(text);
+    const data = result.structuredContent.data;
 
-    expect(parsed).toHaveLength(2);
-    expect(parsed[0].id).toBe('kh7realid001');
-    expect(parsed[1].id).toBe('kh7realid002');
-    expect(text).not.toMatch(/"id"\s*:\s*null/);
-    expect(text).not.toMatch(/"id"\s*:\s*"undefined"/);
+    expect(data).toHaveLength(2);
+    expect(data[0].id).toBe('kh7realid001');
+    expect(data[1].id).toBe('kh7realid002');
+    // Markdown line still surfaces the canonical ID per result row.
+    expect(text).toContain('ID: kh7realid001');
+    expect(text).toContain('ID: kh7realid002');
+    expect(text).not.toMatch(/ID:\s*undefined/);
+    expect(text).not.toMatch(/ID:\s*null/);
   });
 
-  it('falls back to _id when server returns legacy raw-doc shape', async () => {
+  it('passes the server response through verbatim when only _id is present (legacy raw-doc shape)', async () => {
+    // After the v2.0.0 contract migration, structuredContent mirrors the
+    // REST response verbatim. The Markdown formatter intentionally reads
+    // canonical `id`, so a legacy raw-doc shape now renders `ID: undefined`
+    // -- but the structuredContent still preserves the original `_id` so
+    // callers asserting on it can recover the value.
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [
-          { _id: 'kh7legacyid001', title: 'Legacy A', description: 'd', engine: 'gpt-4' },
+          { _id: 'kh7legacyid001', title: 'Legacy A', description: 'd', engine: 'gpt-4', currentVersion: 1 },
         ],
       })
     );
 
     const result = await callTool('search_prompts', {});
-    const parsed = JSON.parse(result.content[0].text);
+    const data = result.structuredContent.data;
 
-    expect(parsed[0].id).toBe('kh7legacyid001');
+    expect(data[0]._id).toBe('kh7legacyid001');
   });
 
-  it('prefers id over _id when both fields are present', async () => {
+  it('prefers id over _id in structuredContent when both fields are present', async () => {
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [
-          { id: 'canonical', _id: 'legacy', title: 't', description: 'd', engine: 'gpt-4' },
+          { id: 'canonical', _id: 'legacy', title: 't', description: 'd', engine: 'gpt-4', currentVersion: 1 },
         ],
       })
     );
 
     const result = await callTool('search_prompts', {});
-    const parsed = JSON.parse(result.content[0].text);
+    const data = result.structuredContent.data;
 
-    expect(parsed[0].id).toBe('canonical');
+    expect(data[0].id).toBe('canonical');
+    // Markdown surfaces the canonical id, never the legacy one.
+    expect(result.content[0].text).toContain('ID: canonical');
+    expect(result.content[0].text).not.toContain('ID: legacy');
   });
 
   it('forwards search and limit query params to the backend', async () => {
@@ -130,12 +141,12 @@ describe('search_prompts — id field rendering (TDD-H3)', () => {
     expect(url).toContain('limit=5');
   });
 
-  it('returns an empty array string when no prompts exist (no crash, no undefined)', async () => {
+  it('returns the canonical "No prompts found." text and empty data array on empty input', async () => {
     fetchMock.mockResolvedValueOnce(mockFetchResponse(200, { data: [] }));
 
     const result = await callTool('search_prompts', {});
-    const parsed = JSON.parse(result.content[0].text);
 
-    expect(parsed).toEqual([]);
+    expect(result.content[0].text).toBe('No prompts found.');
+    expect(result.structuredContent.data).toEqual([]);
   });
 });

@@ -136,12 +136,21 @@ describe('get_collection.includeItems default = true (M-050)', () => {
     expect(fetchCalls[0].url).not.toContain('/items');
     expect(fetchCalls[1].url).toContain('/v1/collections/col_abc123/items');
 
+    // After v2.0.0 the response surfaces structuredContent as the
+    // primary typed payload. The merged items array lives at
+    // structuredContent.items (not nested under data) per the canonical
+    // fixture in src/__tests__/_fixtures/canonical.json.
+    expect(result.structuredContent).toHaveProperty('items');
+    expect(Array.isArray(result.structuredContent.items)).toBe(true);
+    expect(result.structuredContent.items).toHaveLength(2);
+    expect(result.structuredContent.items[0].id).toBe('doc_1');
+
+    // Markdown text now renders the collection header + items list.
     const text = result.content[0].text;
-    const parsed = JSON.parse(text);
-    expect(parsed).toHaveProperty('items');
-    expect(Array.isArray(parsed.items)).toBe(true);
-    expect(parsed.items).toHaveLength(2);
-    expect(parsed.items[0].id).toBe('doc_1');
+    expect(text).toContain('M-050 Test Collection');
+    expect(text).toContain('## Items (2)');
+    expect(text).toContain('First doc');
+    expect(text).toContain('First prompt');
   });
 
   it('fetches items when includeItems is explicitly true', async () => {
@@ -156,11 +165,8 @@ describe('get_collection.includeItems default = true (M-050)', () => {
     });
 
     expect(fetchCalls.length).toBe(2);
-
-    const text = result.content[0].text;
-    const parsed = JSON.parse(text);
-    expect(parsed).toHaveProperty('items');
-    expect(parsed.items).toHaveLength(2);
+    expect(result.structuredContent).toHaveProperty('items');
+    expect(result.structuredContent.items).toHaveLength(2);
   });
 
   it('omits items and skips the items fetch when includeItems is explicitly false', async () => {
@@ -175,11 +181,14 @@ describe('get_collection.includeItems default = true (M-050)', () => {
     expect(fetchCalls[0].url).toContain('/v1/collections/col_abc123');
     expect(fetchCalls[0].url).not.toContain('/items');
 
-    const text = result.content[0].text;
-    const parsed = JSON.parse(text);
-    expect(parsed).not.toHaveProperty('items');
-    expect(parsed.id).toBe('col_abc123');
-    expect(parsed.itemCount).toBe(2);
+    expect(result.structuredContent).not.toHaveProperty('items');
+    expect(result.structuredContent.data.id).toBe('col_abc123');
+    expect(result.structuredContent.data.itemCount).toBe(2);
+
+    // Markdown text excludes the items section but still renders the
+    // collection header.
+    expect(result.content[0].text).not.toContain('## Items');
+    expect(result.content[0].text).toContain('M-050 Test Collection');
   });
 });
 

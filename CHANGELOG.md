@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-04-30
+
+### Breaking changes
+- **All read tools now emit `text` (Markdown) + `structuredContent` (full REST JSON) instead of JSON-as-text.** Tools affected: `get_user_info`, `search_prompts`, `read_prompt`, `list_documents`, `get_document`, `list_collections`, `get_collection`. Pre-2.0 these tools emitted `JSON.stringify(result.data, null, 2)` as the `text` field; 2.0 emits canonical Markdown for humans plus the full REST response body in `structuredContent` for typed-callsite consumers. The Markdown shape is byte-identical to the web `/mcp` server (`app/[transport]/route.ts` in the GitMaxd-Prompts repo) and locked behind a shared canonical fixture (`src/__tests__/_fixtures/canonical.json`).
+- **All action tools now emit `Successfully X...` text (replaces the `✓ X` checkmark prefix) + `structuredContent` mirroring the REST response.** Tools affected: `create_prompt`, `update_prompt`, `delete_prompt`, `restore_prompt_version`, `create_document`, `update_document`, `delete_document`, `restore_document_version`, `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, `remove_from_collection`. Pre-2.0 wording examples: `"✓ Created prompt \"X\""`, `"✓ Updated document \"X\""`. New wording: `"Successfully created prompt \"X\""`, `"Successfully updated document \"X\""`. The change harmonizes this CLI with the web `/mcp` server.
+- **Delete tools now emit `structuredContent: { id, deleted: true }`** synthesized from the request args (REST returns 204 with no body). The same shape is emitted in the idempotent-404 (no-op) branch — only the `text` wording differs (`"<Resource> <id> was already deleted (no-op)."`, unchanged from v1.5.x).
+- **Version-history latest-row marker changed from `(Current)` to `(Latest Snapshot)`** in `get_prompt_versions` and `get_document_versions` Markdown output, matching the web `/mcp` surface.
+- **`restore_prompt_version` / `restore_document_version` text changed from `"New version: <n>"` to `"New version number: <n>"`**, matching the web `/mcp` surface.
+
+### Migration guide
+- Callers parsing `JSON.parse(content[0].text)` should switch to `result.structuredContent`. The structured payload is the full REST response body verbatim — list endpoints retain the `{data, pagination}` envelope, single reads retain `{data}`, action tools return the REST response body, and deletes return `{id, deleted: true}`.
+- Callers asserting on the `✓ X` text prefix should switch to `Successfully X...`.
+- Callers asserting on `Version <n> (Current)` in version-history output should switch to `Version <n> (Latest Snapshot)`.
+- Callers asserting on `New version: <n>` after restore should switch to `New version number: <n>`.
+- Idempotent-404 wording (`"<Resource> <id> was already deleted (no-op)."`) is unchanged from v1.5.x.
+
+### Why
+- This release aligns the npm package byte-for-byte with the web `/mcp` server (`app/[transport]/route.ts` in the GitMaxd-Prompts repo) so MCP clients see identical tool outputs whether they connect via Streamable HTTP or stdio. Both surfaces are now driven by the same `_format.js` pure formatters and a shared canonical fixture (`documentation/05-api/mcp-response-fixtures/canonical.json` in the web repo, copied into `src/__tests__/_fixtures/canonical.json` here on every sync via `scripts/sync-mcp-fixture.sh`). Drift is caught at test time by a SHA-256 equality check when both fixtures are reachable.
+
+### Added
+- **`src/_format.js`** — pure Markdown formatter module mirroring the web's `app/[transport]/_response-formatters.ts`. One function per tool/branch, no I/O, no logger.
+- **`src/__tests__/mcp-response-contract.test.js`** — fixture-driven contract test (91 tests). Asserts byte-identical Markdown for every fixture, source-shape regression that every tool callback emits `structuredContent:`, and a fixture drift guard that compares SHA-256 against the canonical when reachable.
+- **`src/__tests__/_fixtures/canonical.json`** — local copy of the cross-surface canonical fixture (33 entries, 28 web tools of which 26 map to npm; `search`/`fetch` are web-only).
+- **`scripts/sync-mcp-fixture.sh`** — copies the canonical fixture from the web repo (defaults to `../GitMaxd-Prompts`, override via `CONTEXT_REPO_PATH`) and verifies SHA-256 match. Run after any canonical edit.
+
+### Changed
+- **`src/index.js`** rewritten so every tool case dispatches text rendering through `_format.js` and returns `structuredContent` alongside `text`. The 1,465-line file is now ~1,470 lines with formatter logic externalized.
+- Internal version banner bumped from "v1.5.2" to "v2.0.0".
+
+### Test migrations
+- `src/__tests__/search-prompts.test.js` — JSON.parse calls migrated to `result.structuredContent.data` assertions.
+- `src/__tests__/get-collection.test.js` — JSON.parse calls migrated to `result.structuredContent` assertions.
+- `src/__tests__/get-prompt-versions.test.js` — `(Current)` → `(Latest Snapshot)` plus `_id` legacy fallback re-pinned via `structuredContent.data[0]._id`.
+- `src/__tests__/get-document-versions.test.js` — same `(Current)` → `(Latest Snapshot)` and `_id` legacy migration as above.
+- `src/__tests__/restore-prompt-version.test.js` — `New version:` → `New version number:`.
+- `src/__tests__/delete-idempotency.test.js` — `Deleted prompt p1` → `Successfully deleted prompt p1`, plus new `result.structuredContent` assertions.
+
+### Notes
+- This release contains **npm-package-only behavior changes**. The web `/mcp` server in the GitMaxd-Prompts repo (`app/[transport]/route.ts`) has been migrated to the same Markdown + structuredContent contract in Phase 2 of the MCP Server Alignment mission (2026-04-30); this v2.0.0 brings the npm CLI to parity.
+- Test totals: **513 passed, 8 skipped** (was 422 + 91 new = 513). No baseline regressions.
+
 ## [1.5.3] - 2026-04-27
 
 ### Fixed

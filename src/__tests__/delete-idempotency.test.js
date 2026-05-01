@@ -88,7 +88,10 @@ describe('delete tools — happy-path (204 No Content)', () => {
     const result = await callTool('delete_prompt', { promptId: 'p1' });
 
     expect(result.isError).toBeFalsy();
-    expect(result.content[0].text).toContain('Deleted prompt p1');
+    // v2.0.0 wording: "Successfully deleted <resource> <id>" (replaces the
+    // pre-2.0 "✓ Deleted ..." prefix to match the web /mcp surface).
+    expect(result.content[0].text).toContain('Successfully deleted prompt p1');
+    expect(result.structuredContent).toEqual({ id: 'p1', deleted: true });
     expect(fetchMock.mock.calls[0][1].method).toBe('DELETE');
     expect(fetchMock.mock.calls[0][0]).toContain('/v1/prompts/p1');
   });
@@ -99,7 +102,8 @@ describe('delete tools — happy-path (204 No Content)', () => {
     const result = await callTool('delete_document', { documentId: 'd1' });
 
     expect(result.isError).toBeFalsy();
-    expect(result.content[0].text).toContain('Deleted document d1');
+    expect(result.content[0].text).toContain('Successfully deleted document d1');
+    expect(result.structuredContent).toEqual({ id: 'd1', deleted: true });
   });
 
   it('delete_collection returns success on 204', async () => {
@@ -108,7 +112,8 @@ describe('delete tools — happy-path (204 No Content)', () => {
     const result = await callTool('delete_collection', { collectionId: 'c1' });
 
     expect(result.isError).toBeFalsy();
-    expect(result.content[0].text).toContain('Deleted collection c1');
+    expect(result.content[0].text).toContain('Successfully deleted collection c1');
+    expect(result.structuredContent).toEqual({ id: 'c1', deleted: true });
   });
 });
 

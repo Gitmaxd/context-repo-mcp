@@ -20,6 +20,39 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import {
+  formatGetUserInfo,
+  formatSearchPrompts,
+  formatReadPrompt,
+  formatCreatePrompt,
+  formatUpdatePrompt,
+  formatDeletePrompt,
+  formatDeletePromptIdempotent,
+  formatGetPromptVersions,
+  formatRestorePromptVersion,
+  formatListDocuments,
+  formatGetDocument,
+  formatCreateDocument,
+  formatUpdateDocument,
+  formatDeleteDocument,
+  formatDeleteDocumentIdempotent,
+  formatGetDocumentVersions,
+  formatRestoreDocumentVersion,
+  formatListCollections,
+  formatGetCollection,
+  formatCreateCollection,
+  formatUpdateCollection,
+  formatDeleteCollection,
+  formatDeleteCollectionIdempotent,
+  formatAddToCollection,
+  formatRemoveFromCollection,
+  formatFindItems,
+  formatDeepSearch,
+  formatDeepSearchEmpty,
+  formatDeepRead,
+  formatDeepExpand,
+  formatDeepExpandEmpty,
+} from "./_format.js";
 
 // =============================================================================
 // CONFIGURATION
@@ -195,7 +228,7 @@ function getId(obj) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "1.5.2",
+    version: "2.0.0",
   },
   {
     capabilities: {
@@ -763,7 +796,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "get_user_info": {
         const result = await apiRequest("GET", "/v1/user/me");
         return {
-          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
+          content: [{ type: "text", text: formatGetUserInfo(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -773,22 +807,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.limit) params.set("limit", String(args.limit));
 
         const result = await apiRequest("GET", `/v1/prompts?${params}`);
-        const summary = result.data.map((p) => ({
-          id: getId(p),
-          title: p.title,
-          description: p.description,
-          engine: p.engine,
-        }));
-
         return {
-          content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
+          content: [{ type: "text", text: formatSearchPrompts(result) }],
+          structuredContent: result,
         };
       }
 
       case "read_prompt": {
         const result = await apiRequest("GET", `/v1/prompts/${args.promptId}`);
         return {
-          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
+          content: [{ type: "text", text: formatReadPrompt(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -802,27 +831,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           variables: [],
         });
 
+        // The web `/mcp` server reads `id` directly from the canonical
+        // server response; npm's getId() also handles the legacy raw-doc
+        // shape so older `_id`-only responses still render a real ID.
+        const promptForFormatter = {
+          title: args.title,
+          id: getId(result.data),
+          engine: args.engine,
+        };
         return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Created prompt "${args.title}"\n\nID: ${getId(result.data)}`,
-            },
-          ],
+          content: [{ type: "text", text: formatCreatePrompt(promptForFormatter) }],
+          structuredContent: result,
         };
       }
 
       case "update_prompt": {
         const { promptId, ...updates } = args;
         const result = await apiRequest("PATCH", `/v1/prompts/${promptId}`, updates);
-
         return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Updated prompt "${result.data.title}"\n\nNew version: ${result.data.currentVersion}`,
-            },
-          ],
+          content: [{ type: "text", text: formatUpdatePrompt(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -830,12 +858,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           await apiRequest("DELETE", `/v1/prompts/${args.promptId}`);
           return {
-            content: [{ type: "text", text: `✓ Deleted prompt ${args.promptId}` }],
+            content: [{ type: "text", text: formatDeletePrompt(args.promptId) }],
+            structuredContent: { id: args.promptId, deleted: true },
           };
         } catch (error) {
           if (error instanceof Error && /not found/i.test(error.message)) {
             return {
-              content: [{ type: "text", text: `Prompt ${args.promptId} was already deleted (no-op).` }],
+              content: [
+                { type: "text", text: formatDeletePromptIdempotent(args.promptId) },
+              ],
+              structuredContent: { id: args.promptId, deleted: true },
             };
           }
           throw error;
@@ -844,31 +876,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "get_prompt_versions": {
         const result = await apiRequest("GET", `/v1/prompts/${args.promptId}/versions`);
-
-        if (!result.data || result.data.length === 0) {
-          return {
-            content: [{ type: "text", text: "No version history found for this prompt." }],
-          };
-        }
-
-        const formatted = result.data
-          .map(
-            (v, i) =>
-              `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
-              `- **ID:** ${getId(v)}\n` +
-              `- **Changed by:** ${v.userName || "Unknown"}\n` +
-              `- **Change log:** ${v.changeLog || "No description"}\n` +
-              (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
-          )
-          .join("\n\n");
-
         return {
           content: [
-            {
-              type: "text",
-              text: `## Version History (${result.data.length} versions)\n\n${formatted}`,
-            },
+            { type: "text", text: formatGetPromptVersions(result.data ?? []) },
           ],
+          structuredContent: result,
         };
       }
 
@@ -876,14 +888,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await apiRequest("POST", `/v1/prompts/${args.promptId}/restore`, {
           versionId: args.versionId,
         });
-
         return {
           content: [
-            {
-              type: "text",
-              text: `✓ Successfully restored prompt to previous version.\n\nNew version: ${result.data?.currentVersion || "unknown"}`,
-            },
+            { type: "text", text: formatRestorePromptVersion(result.data) },
           ],
+          structuredContent: result,
         };
       }
 
@@ -893,21 +902,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.limit) params.set("limit", String(args.limit));
 
         const result = await apiRequest("GET", `/v1/collections?${params}`);
-        const summary = result.data.map((c) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description,
-          itemCount: c.itemCount,
-        }));
-
         return {
-          content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
+          content: [{ type: "text", text: formatListCollections(result) }],
+          structuredContent: result,
         };
       }
 
       case "get_collection": {
         const result = await apiRequest("GET", `/v1/collections/${args.collectionId}`);
-        let response = result.data;
 
         // M-050 (2026-04-26) — default `includeItems` to true so this CLI
         // matches the httpStreamableServer behavior at app/[transport]/route.ts:739
@@ -917,12 +919,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // the same collection returned different shapes depending on which
         // client a user was on. Explicit `includeItems: false` opts out.
         if (args.includeItems !== false) {
-          const items = await apiRequest("GET", `/v1/collections/${args.collectionId}/items?limit=50`);
-          response = { ...response, items: items.data };
+          const items = await apiRequest(
+            "GET",
+            `/v1/collections/${args.collectionId}/items?limit=50`,
+          );
+          return {
+            content: [
+              {
+                type: "text",
+                text: formatGetCollection(result.data, items.data),
+              },
+            ],
+            structuredContent: { ...result, items: items.data },
+          };
         }
 
         return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
+          content: [{ type: "text", text: formatGetCollection(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -934,27 +948,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           icon: args.icon,
         });
 
+        const collectionForFormatter = { id: getId(result.data) };
         return {
           content: [
             {
               type: "text",
-              text: `✓ Created collection "${args.name}"\n\nID: ${getId(result.data)}`,
+              text: formatCreateCollection(collectionForFormatter, {
+                name: args.name,
+                icon: args.icon,
+                color: args.color,
+              }),
             },
           ],
+          structuredContent: result,
         };
       }
 
       case "update_collection": {
         const { collectionId, ...updates } = args;
         const result = await apiRequest("PATCH", `/v1/collections/${collectionId}`, updates);
-
         return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Updated collection "${result.data.name}"`,
-            },
-          ],
+          content: [{ type: "text", text: formatUpdateCollection(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -962,12 +977,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           await apiRequest("DELETE", `/v1/collections/${args.collectionId}`);
           return {
-            content: [{ type: "text", text: `✓ Deleted collection ${args.collectionId}` }],
+            content: [
+              { type: "text", text: formatDeleteCollection(args.collectionId) },
+            ],
+            structuredContent: { id: args.collectionId, deleted: true },
           };
         } catch (error) {
           if (error instanceof Error && /not found/i.test(error.message)) {
             return {
-              content: [{ type: "text", text: `Collection ${args.collectionId} was already deleted (no-op).` }],
+              content: [
+                {
+                  type: "text",
+                  text: formatDeleteCollectionIdempotent(args.collectionId),
+                },
+              ],
+              structuredContent: { id: args.collectionId, deleted: true },
             };
           }
           throw error;
@@ -979,14 +1003,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           itemIds: args.itemIds,
           itemType: args.itemType,
         });
-
         return {
           content: [
             {
               type: "text",
-              text: `✓ Added ${result.data.added} item(s) to collection\n\nAlready in collection: ${result.data.alreadyInCollection}`,
+              text: formatAddToCollection(result.data, args.itemType),
             },
           ],
+          structuredContent: result,
         };
       }
 
@@ -995,14 +1019,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           itemIds: args.itemIds,
           itemType: args.itemType,
         });
-
         return {
           content: [
             {
               type: "text",
-              text: `✓ Removed ${result.data.removed} item(s) from collection`,
+              text: formatRemoveFromCollection(result.data, args.itemType),
             },
           ],
+          structuredContent: result,
         };
       }
 
@@ -1013,21 +1037,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.limit) params.set("limit", String(args.limit));
 
         const result = await apiRequest("GET", `/v1/documents?${params}`);
-        const summary = result.data.map((d) => ({
-          id: d.id,
-          title: d.title,
-          status: d.status,
-        }));
-
         return {
-          content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
+          content: [{ type: "text", text: formatListDocuments(result) }],
+          structuredContent: result,
         };
       }
 
       case "get_document": {
         const result = await apiRequest("GET", `/v1/documents/${args.documentId}`);
         return {
-          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
+          content: [{ type: "text", text: formatGetDocument(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -1038,27 +1058,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           tags: args.tags || [],
         });
 
+        // formatCreateDocument() reads `_id ?? id` so legacy raw-doc
+        // payloads still surface the canonical ID line. Pass through the
+        // raw `result.data` plus an aliased `_id` so a server returning
+        // only `{ id }` also resolves correctly via getId().
+        const docForFormatter = { ...result.data, _id: getId(result.data) };
         return {
           content: [
             {
               type: "text",
-              text: `✓ Created document "${args.title}"\n\nID: ${getId(result.data)}`,
+              text: formatCreateDocument(docForFormatter, {
+                title: args.title,
+                tags: args.tags,
+              }),
             },
           ],
+          structuredContent: result,
         };
       }
 
       case "update_document": {
         const { documentId, ...updates } = args;
         const result = await apiRequest("PATCH", `/v1/documents/${documentId}`, updates);
-
         return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Updated document "${result.data.title}"`,
-            },
-          ],
+          content: [{ type: "text", text: formatUpdateDocument(result.data) }],
+          structuredContent: result,
         };
       }
 
@@ -1066,12 +1090,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           await apiRequest("DELETE", `/v1/documents/${args.documentId}`);
           return {
-            content: [{ type: "text", text: `✓ Deleted document ${args.documentId}` }],
+            content: [
+              { type: "text", text: formatDeleteDocument(args.documentId) },
+            ],
+            structuredContent: { id: args.documentId, deleted: true },
           };
         } catch (error) {
           if (error instanceof Error && /not found/i.test(error.message)) {
             return {
-              content: [{ type: "text", text: `Document ${args.documentId} was already deleted (no-op).` }],
+              content: [
+                {
+                  type: "text",
+                  text: formatDeleteDocumentIdempotent(args.documentId),
+                },
+              ],
+              structuredContent: { id: args.documentId, deleted: true },
             };
           }
           throw error;
@@ -1080,32 +1113,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "get_document_versions": {
         const result = await apiRequest("GET", `/v1/documents/${args.documentId}/versions`);
-
-        if (!result.data || result.data.length === 0) {
-          return {
-            content: [{ type: "text", text: "No version history found for this document." }],
-          };
-        }
-
-        const formatted = result.data
-          .map(
-            (v, i) =>
-              `### Version ${v.version}${i === 0 ? " (Current)" : ""}\n` +
-              `- **ID:** ${getId(v)}\n` +
-              `- **Title:** ${v.title}\n` +
-              `- **Changed by:** ${v.userName || "Unknown"}\n` +
-              `- **Change log:** ${v.changeLog || "No description"}\n` +
-              (v.content ? `- **Preview:** ${v.content.slice(0, 200)}${v.content.length > 200 ? "..." : ""}` : "")
-          )
-          .join("\n\n");
-
         return {
           content: [
-            {
-              type: "text",
-              text: `## Version History (${result.data.length} versions)\n\n${formatted}`,
-            },
+            { type: "text", text: formatGetDocumentVersions(result.data ?? []) },
           ],
+          structuredContent: result,
         };
       }
 
@@ -1113,14 +1125,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await apiRequest("POST", `/v1/documents/${args.documentId}/restore`, {
           versionId: args.versionId,
         });
-
         return {
           content: [
-            {
-              type: "text",
-              text: `✓ Successfully restored document to previous version.\n\nNew version: ${result.data?.currentVersion || "unknown"}`,
-            },
+            { type: "text", text: formatRestoreDocumentVersion(result.data) },
           ],
+          structuredContent: result,
         };
       }
 
@@ -1131,71 +1140,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.semantic === false) params.set("semantic", "false");
 
         const result = await apiRequest("GET", `/v1/search?${params}`);
-
-        // Format results similar to App MCP Server. The (id: ...) token is
-        // additive — every previously present field stays in place, so external
-        // markdown parsers do not break. Surfaces IDs the REST layer already
-        // returns so agents do not need a follow-up list_*/search_* round-trip.
-        const sections = [];
-        const isSemantic = Boolean(result.meta?.semantic);
-
-        if (result.data.prompts?.length > 0) {
-          sections.push(
-            `### Prompts (${result.data.prompts.length})\n${result.data.prompts
-              .map((p) => {
-                const id = String(p.promptId ?? "");
-                const desc = p.description?.slice(0, 100) || "";
-                const ellipsis = p.description?.length > 100 ? "..." : "";
-                if (isSemantic && typeof p.score === "number") {
-                  return `- **${p.title}** (id: ${id}, score: ${p.score.toFixed(2)}) - ${desc}${ellipsis}`;
-                }
-                return `- **${p.title}** (id: ${id}) - ${desc}${ellipsis}`;
-              })
-              .join("\n")}`
-          );
-        }
-
-        if (result.data.documents?.length > 0) {
-          sections.push(
-            `### Documents (${result.data.documents.length})\n${result.data.documents
-              .map((d) => {
-                const id = String(d.documentId ?? "");
-                if (isSemantic && typeof d.score === "number") {
-                  return `- **${d.title}** (id: ${id}, score: ${d.score.toFixed(2)})`;
-                }
-                return `- **${d.title}** (id: ${id})`;
-              })
-              .join("\n")}`
-          );
-        }
-
-        if (result.data.collections?.length > 0) {
-          sections.push(
-            `### Collections (${result.data.collections.length})\n${result.data.collections
-              .map((c) => {
-                const id = String(c.collectionId ?? "");
-                if (isSemantic && typeof c.score === "number") {
-                  const matchedItems = typeof c.matchedItems === "number" ? `, ${c.matchedItems} matched items` : "";
-                  return `- **${c.name}** (id: ${id}, score: ${c.score.toFixed(2)}${matchedItems})`;
-                }
-                const description = c.description ? ` - ${c.description}` : "";
-                return `- **${c.name}** (id: ${id})${description}`;
-              })
-              .join("\n")}`
-          );
-        }
-
-        const header = result.meta?.semantic
-          ? `## Semantic Search Results for "${args.query}"`
-          : `## Search Results for "${args.query}"`;
+        const useSemantic = args.semantic !== false;
 
         return {
           content: [
             {
               type: "text",
-              text: sections.length > 0 ? `${header}\n\n${sections.join("\n\n")}` : `No results found for "${args.query}".`,
+              text: formatFindItems({
+                query: args.query,
+                useSemantic,
+                data: {
+                  prompts: result.data?.prompts ?? [],
+                  documents: result.data?.documents ?? [],
+                  collections: result.data?.collections ?? [],
+                },
+              }),
             },
           ],
+          structuredContent: result,
         };
       }
 
@@ -1232,98 +1194,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         const searchResult = await apiRequest("POST", "/v1/pd/search", searchBody);
-        const results = searchResult.data.results;
-        const meta = searchResult.data.meta;
+        const results = searchResult.data?.results;
 
         if (!results || results.length === 0) {
+          const queryEcho = searchResult.data?.meta?.query || args.query;
           return {
-            content: [
-              {
-                type: "text",
-                text: `No results found for "${meta?.query || args.query}".`,
-              },
-            ],
+            content: [{ type: "text", text: formatDeepSearchEmpty(queryEcho) }],
+            structuredContent: searchResult,
           };
         }
 
-        // Format each result with hierarchy metadata
-        const formattedResults = results.map((r, i) => {
-          const preview = r.content?.length > 200 ? r.content.slice(0, 200) + "..." : r.content;
-          const lines = [
-            `### Result ${i + 1}`,
-            `- **chunkId:** ${r.chunkId}`,
-            `- **Score:** ${typeof r.score === "number" ? r.score.toFixed(2) : r.score}`,
-            `- **Level:** ${r.level}`,
-            `- **Document:** ${r.documentTitle} (${r.documentId})`,
-            `- **Content:** ${preview}`,
-          ];
-
-          if (r.parentId) {
-            lines.push(`- **Parent:** ${r.parentId}`);
-          }
-
-          if (r.siblingIds) {
-            if (r.siblingIds.prev) lines.push(`- **Prev Sibling:** ${r.siblingIds.prev}`);
-            if (r.siblingIds.next) lines.push(`- **Next Sibling:** ${r.siblingIds.next}`);
-          }
-
-          return lines.join("\n");
-        });
-
-        const header = `## Progressive Disclosure Search: "${meta.query}"\n\n**Total Results:** ${meta.totalResults}`;
-        const text = `${header}\n\n${formattedResults.join("\n\n")}`;
-
         return {
-          content: [{ type: "text", text }],
+          content: [
+            { type: "text", text: formatDeepSearch(searchResult.data) },
+          ],
+          structuredContent: searchResult,
         };
       }
 
       case "deep_read": {
         const readResult = await apiRequest("GET", `/v1/pd/read/${args.chunkId}`);
-        const chunk = readResult.data;
-
-        const lines = [
-          `## Chunk Details`,
-          ``,
-          `- **chunkId:** ${chunk.chunkId}`,
-          `- **Level:** ${chunk.level}`,
-          `- **Content:**`,
-          ``,
-          chunk.content,
-          ``,
-          `### Hierarchy`,
-          `- **Document:** ${chunk.hierarchy.documentTitle} (${chunk.hierarchy.documentId})`,
-          `- **Section Path:** ${chunk.hierarchy.sectionPath}`,
-          ``,
-          `### Position`,
-          `- **Chunk Index:** ${chunk.hierarchy.position.chunkIndex}`,
-        ];
-
-        if (chunk.hierarchy.position.parentChunkId) {
-          lines.push(`- **Parent Chunk:** ${chunk.hierarchy.position.parentChunkId}`);
-        }
-        if (chunk.hierarchy.position.prevSiblingId) {
-          lines.push(`- **Prev Sibling:** ${chunk.hierarchy.position.prevSiblingId}`);
-        }
-        if (chunk.hierarchy.position.nextSiblingId) {
-          lines.push(`- **Next Sibling:** ${chunk.hierarchy.position.nextSiblingId}`);
-        }
-
-        lines.push(``);
-        lines.push(`### Metadata`);
-        lines.push(`- **Word Count:** ${chunk.metadata.wordCount}`);
-        lines.push(`- **Start Index:** ${chunk.metadata.startIndex}`);
-        lines.push(`- **End Index:** ${chunk.metadata.endIndex}`);
-
-        if (chunk.metadata.headingText) {
-          lines.push(`- **Heading:** ${chunk.metadata.headingText}`);
-        }
-
-        lines.push(``);
-        lines.push(`> Use deep_expand with this chunkId to navigate to related chunks.`);
-
         return {
-          content: [{ type: "text", text: lines.join("\n") }],
+          content: [{ type: "text", text: formatDeepRead(readResult.data) }],
+          structuredContent: readResult,
         };
       }
 
@@ -1333,63 +1226,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.count !== undefined) expandBody.count = args.count;
 
         const expandResult = await apiRequest("POST", "/v1/pd/expand", expandBody);
-        const chunks = expandResult.data.chunks;
+        const chunks = expandResult.data?.chunks;
 
         if (!chunks || chunks.length === 0) {
+          // M-033 self-healing wording — see _format.js:formatDeepExpandEmpty.
           return {
-            content: [
-              {
-                type: "text",
-                text: `No chunks found in that direction.`,
-              },
-            ],
+            content: [{ type: "text", text: formatDeepExpandEmpty() }],
+            structuredContent: expandResult,
           };
         }
 
-        // Direction-specific labels
-        const directionLabels = {
-          up: "Parent chunk",
-          down: "Child chunks",
-          next: "Next sibling",
-          previous: "Previous sibling",
-          surrounding: "Surrounding chunks",
-        };
-
-        const label = directionLabels[args.direction] || "Chunks";
-
-        // Format each chunk, mapping _id to chunkId
-        const formattedChunks = chunks.map((chunk, i) => {
-          const chunkId = chunk._id || chunk.chunkId;
-          const lines = [
-            `### Chunk ${i + 1}`,
-            `- **chunkId:** ${chunkId}`,
-            `- **Level:** ${chunk.level}`,
-            `- **Chunk Index:** ${chunk.chunkIndex}`,
-            `- **Document:** ${chunk.documentTitle} (${chunk.documentId})`,
-          ];
-
-          // M-049 (2026-04-26) — server-side `expandChunk` (convex/pdHttp.ts
-          // expandedChunkValidator) emits the parent linkage as `parentId`.
-          // Earlier versions of this formatter read `chunk.parentChunkId`,
-          // which always resolved to `undefined`, so the "Parent:" line
-          // silently never rendered for any direction. The wire contract is
-          // verified in convex/pdHttp.ts line 27 and convex/progressiveSearch.ts
-          // line 280 — both deep_search and deep_expand emit `parentId`;
-          // only deep_read uses the nested `position.parentChunkId` shape.
-          if (chunk.parentId) {
-            lines.push(`- **Parent:** ${chunk.parentId}`);
-          }
-
-          lines.push(`- **Content:** ${chunk.content}`);
-
-          return lines.join("\n");
-        });
-
-        const header = `## ${label}\n\n**Direction:** ${args.direction} | **Results:** ${chunks.length}`;
-        const text = `${header}\n\n${formattedChunks.join("\n\n")}`;
-
         return {
-          content: [{ type: "text", text }],
+          content: [
+            {
+              type: "text",
+              text: formatDeepExpand({ direction: args.direction, chunks }),
+            },
+          ],
+          structuredContent: expandResult,
         };
       }
 
@@ -1446,7 +1300,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v1.5.2                   ║");
+  console.error("║              Context Repo MCP Server v2.0.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

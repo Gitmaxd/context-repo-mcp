@@ -87,7 +87,11 @@ describe('get_prompt_versions — version ID rendering (TDD-H2)', () => {
     expect(text).not.toMatch(/\*\*ID:\*\*\s*null/);
   });
 
-  it('marks the first row as (Current) and renders Version label correctly', async () => {
+  it('marks the first row as (Latest Snapshot) and renders Version label correctly', async () => {
+    // v2.0.0 changed the latest-row marker from "(Current)" to
+    // "(Latest Snapshot)" to align with the web /mcp surface (locked by
+    // canonical fixture). Older clients matching on the literal string
+    // "(Current)" need to migrate to "(Latest Snapshot)".
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ id: 'v_curr', version: 3, userName: 'u', changeLog: 'c', content: 'x' }],
@@ -97,10 +101,14 @@ describe('get_prompt_versions — version ID rendering (TDD-H2)', () => {
     const result = await callTool('get_prompt_versions', { promptId: 'p1' });
     const text = result.content[0].text;
 
-    expect(text).toContain('Version 3 (Current)');
+    expect(text).toContain('Version 3 (Latest Snapshot)');
   });
 
-  it('falls back to _id when server returns legacy raw-row shape', async () => {
+  it('preserves _id verbatim in structuredContent when server returns legacy raw-row shape', async () => {
+    // Markdown formatter now reads `v.id` directly per the canonical
+    // contract; structuredContent mirrors the REST response verbatim, so
+    // a legacy `_id` field is preserved untouched for callers asserting
+    // on it.
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ _id: 'v_legacy', version: 1, userName: 'u', changeLog: 'c', content: 'x' }],
@@ -109,10 +117,10 @@ describe('get_prompt_versions — version ID rendering (TDD-H2)', () => {
 
     const result = await callTool('get_prompt_versions', { promptId: 'p1' });
 
-    expect(result.content[0].text).toContain('v_legacy');
+    expect(result.structuredContent.data[0]._id).toBe('v_legacy');
   });
 
-  it('prefers id over _id when both are present', async () => {
+  it('renders id (not _id) in markdown when both are present', async () => {
     fetchMock.mockResolvedValueOnce(
       mockFetchResponse(200, {
         data: [{ id: 'canonical', _id: 'legacy', version: 1, userName: 'u', changeLog: 'c', content: 'x' }],
@@ -122,7 +130,7 @@ describe('get_prompt_versions — version ID rendering (TDD-H2)', () => {
     const result = await callTool('get_prompt_versions', { promptId: 'p1' });
     const text = result.content[0].text;
 
-    expect(text).toContain('canonical');
+    expect(text).toContain('**ID:** canonical');
     expect(text).not.toMatch(/\*\*ID:\*\*\s*legacy/);
   });
 

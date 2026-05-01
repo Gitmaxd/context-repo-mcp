@@ -1,0 +1,1131 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "purpose": "Canonical MCP response shape -- single source of truth for both /mcp web and context-repo-mcp npm",
+    "generatedAt": "2026-04-30",
+    "toolCount": 28,
+    "exempt": ["search", "fetch"],
+    "notes": [
+      "All `text` strings are lifted verbatim from app/[transport]/route.ts. Action tools follow the web 'Successfully X' pattern (npm '\u2713 X' wording is migrated in Phase 3).",
+      "structuredContent mirrors the full REST response body. List endpoints retain the {data, pagination} envelope; single-resource reads keep the {data} envelope; action tools return the REST response body verbatim.",
+      "Delete tools synthesize {id, deleted: true} for structuredContent because REST returns 204/null. The same shape is used for the idempotent-404 (no-op) branch -- the difference is only in the `text` wording.",
+      "get_collection emits two fixtures: the default (includeItems omitted, treated as true per M-050) which performs a second REST call to /items, and the includeItems:false branch which performs a single REST call.",
+      "deep_expand emits two fixtures: a normal-results entry and the M-033 self-healing empty-results entry whose text matches route.ts:1432 verbatim.",
+      "search and fetch are EXEMPT from Markdown per the OpenAI Apps SDK Company-Knowledge contract -- their `text` field stays JSON-as-text. They DO get a structuredContent mirror of the same JSON for uniformity (per locked decision Q5 in the audit).",
+      "Non-ASCII characters are emitted via \\u escape sequences so the file is pure ASCII-safe at the source; downstream JSON parsers materialize them as their natural Unicode glyphs (em-dash \\u2014, folder emoji \\ud83d\\udcc1).",
+      "Mock REST IDs are deterministic and timestamp-free: prompt_aaa, prompt_bbb, doc_bbb, doc_eee, col_ccc, chunk_ddd, etc. The fetch fixture intentionally uses raw convex IDs (aaa/bbb/ccc) in its REST mock so the encodeMcpId() prefix yields prompt_aaa / document_bbb / collection_ccc in the output payload."
+    ]
+  },
+  "fixtures": [
+    {
+      "tool": "get_user_info",
+      "args": {},
+      "rest": {
+        "endpoint": "GET /v1/user/me",
+        "response": {
+          "data": {
+            "id": "user_test_aaa",
+            "name": "Test User",
+            "email": "test@example.com",
+            "externalId": "clerk_user_aaa",
+            "authMethod": "clerk",
+            "permissions": ["prompts.read", "prompts.write", "documents.read", "documents.write"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Test User\n\n- **ID:** user_test_aaa\n- **Email:** test@example.com\n- **External ID:** clerk_user_aaa\n- **Auth Method:** clerk\n- **Permissions:** prompts.read, prompts.write, documents.read, documents.write",
+        "structuredContent": {
+          "data": {
+            "id": "user_test_aaa",
+            "name": "Test User",
+            "email": "test@example.com",
+            "externalId": "clerk_user_aaa",
+            "authMethod": "clerk",
+            "permissions": ["prompts.read", "prompts.write", "documents.read", "documents.write"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "search_prompts",
+      "args": { "limit": 2 },
+      "rest": {
+        "endpoint": "GET /v1/prompts?limit=2",
+        "response": {
+          "data": [
+            {
+              "id": "prompt_aaa",
+              "title": "Sample Prompt",
+              "description": "A sample prompt.",
+              "engine": "gpt-4",
+              "isPublic": false,
+              "currentVersion": 1
+            },
+            {
+              "id": "prompt_bbb",
+              "title": "Second Prompt",
+              "description": "Another prompt.",
+              "engine": "claude-3",
+              "isPublic": false,
+              "currentVersion": 1
+            }
+          ],
+          "pagination": null
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Found 2 prompts:\n\n- **Sample Prompt** (v1)\n  A sample prompt.\n  Engine: gpt-4 | ID: prompt_aaa\n\n- **Second Prompt** (v1)\n  Another prompt.\n  Engine: claude-3 | ID: prompt_bbb",
+        "structuredContent": {
+          "data": [
+            {
+              "id": "prompt_aaa",
+              "title": "Sample Prompt",
+              "description": "A sample prompt.",
+              "engine": "gpt-4",
+              "isPublic": false,
+              "currentVersion": 1
+            },
+            {
+              "id": "prompt_bbb",
+              "title": "Second Prompt",
+              "description": "Another prompt.",
+              "engine": "claude-3",
+              "isPublic": false,
+              "currentVersion": 1
+            }
+          ],
+          "pagination": null
+        }
+      }
+    },
+    {
+      "tool": "read_prompt",
+      "args": { "promptId": "prompt_aaa" },
+      "rest": {
+        "endpoint": "GET /v1/prompts/prompt_aaa",
+        "response": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "isPublic": false,
+            "currentVersion": 1,
+            "content": "Hello ${input}!",
+            "variables": [
+              { "name": "input", "description": "User input" }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Sample Prompt\n\n**Description:** A sample prompt.\n**Engine:** gpt-4\n**Version:** 1\n**Public:** No\n\n## Content\n\n```\nHello ${input}!\n```\n\n## Variables\n\n- `${input}` - User input",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "isPublic": false,
+            "currentVersion": 1,
+            "content": "Hello ${input}!",
+            "variables": [
+              { "name": "input", "description": "User input" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "tool": "create_prompt",
+      "args": {
+        "title": "New Prompt",
+        "description": "A new prompt.",
+        "content": "Hi there",
+        "engine": "gpt-4"
+      },
+      "rest": {
+        "endpoint": "POST /v1/prompts",
+        "response": {
+          "data": {
+            "id": "prompt_new",
+            "title": "New Prompt",
+            "description": "A new prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 1,
+            "isPublic": false,
+            "content": "Hi there"
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created prompt \"New Prompt\"\n\nID: prompt_new\nEngine: gpt-4",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_new",
+            "title": "New Prompt",
+            "description": "A new prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 1,
+            "isPublic": false,
+            "content": "Hi there"
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_prompt",
+      "args": {
+        "promptId": "prompt_aaa",
+        "content": "Hello again",
+        "changeLog": "Tightened wording"
+      },
+      "rest": {
+        "endpoint": "PATCH /v1/prompts/prompt_aaa",
+        "response": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 2,
+            "isPublic": false,
+            "content": "Hello again"
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated prompt \"Sample Prompt\"\n\nVersion: 2",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 2,
+            "isPublic": false,
+            "content": "Hello again"
+          }
+        }
+      }
+    },
+    {
+      "tool": "delete_prompt",
+      "args": { "promptId": "prompt_aaa" },
+      "rest": {
+        "endpoint": "DELETE /v1/prompts/prompt_aaa",
+        "response": null,
+        "status": 204
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully deleted prompt prompt_aaa",
+        "structuredContent": {
+          "id": "prompt_aaa",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "delete_prompt_idempotent",
+      "args": { "promptId": "prompt_aaa" },
+      "rest": {
+        "endpoint": "DELETE /v1/prompts/prompt_aaa",
+        "response": { "error": { "message": "Prompt not found" } },
+        "status": 404
+      },
+      "expected": {
+        "isError": false,
+        "text": "Prompt prompt_aaa was already deleted (no-op).",
+        "structuredContent": {
+          "id": "prompt_aaa",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "get_prompt_versions",
+      "args": { "promptId": "prompt_aaa" },
+      "rest": {
+        "endpoint": "GET /v1/prompts/prompt_aaa/versions",
+        "response": {
+          "data": [
+            {
+              "id": "vp_002",
+              "version": 2,
+              "userName": "GitMaxd",
+              "changeLog": "Tightened wording",
+              "content": "Hello ${input}!"
+            },
+            {
+              "id": "vp_001",
+              "version": 1,
+              "userName": "GitMaxd",
+              "changeLog": "Initial draft",
+              "content": "Hi ${input}"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Version History (2 versions)\n\n### Version 2 (Latest Snapshot)\n- **ID:** vp_002\n- **Changed by:** GitMaxd\n- **Change log:** Tightened wording\n- **Preview:** Hello ${input}!\n\n### Version 1\n- **ID:** vp_001\n- **Changed by:** GitMaxd\n- **Change log:** Initial draft\n- **Preview:** Hi ${input}",
+        "structuredContent": {
+          "data": [
+            {
+              "id": "vp_002",
+              "version": 2,
+              "userName": "GitMaxd",
+              "changeLog": "Tightened wording",
+              "content": "Hello ${input}!"
+            },
+            {
+              "id": "vp_001",
+              "version": 1,
+              "userName": "GitMaxd",
+              "changeLog": "Initial draft",
+              "content": "Hi ${input}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tool": "restore_prompt_version",
+      "args": { "promptId": "prompt_aaa", "versionId": "vp_001" },
+      "rest": {
+        "endpoint": "POST /v1/prompts/prompt_aaa/restore",
+        "response": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "currentVersion": 3
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully restored prompt to previous version.\n\nNew version number: 3",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "currentVersion": 3
+          }
+        }
+      }
+    },
+    {
+      "tool": "list_documents",
+      "args": { "limit": 2 },
+      "rest": {
+        "endpoint": "GET /v1/documents?limit=2",
+        "response": {
+          "data": [
+            {
+              "id": "doc_bbb",
+              "title": "Sample Document",
+              "status": "ready",
+              "sourceType": "text"
+            },
+            {
+              "id": "doc_eee",
+              "title": "Onboarding Doc",
+              "status": "ready",
+              "sourceType": "text"
+            }
+          ],
+          "pagination": null
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Found 2 documents:\n\n- **Sample Document**\n  Status: ready | Type: text | ID: doc_bbb\n\n- **Onboarding Doc**\n  Status: ready | Type: text | ID: doc_eee",
+        "structuredContent": {
+          "data": [
+            {
+              "id": "doc_bbb",
+              "title": "Sample Document",
+              "status": "ready",
+              "sourceType": "text"
+            },
+            {
+              "id": "doc_eee",
+              "title": "Onboarding Doc",
+              "status": "ready",
+              "sourceType": "text"
+            }
+          ],
+          "pagination": null
+        }
+      }
+    },
+    {
+      "tool": "get_document",
+      "args": { "documentId": "doc_bbb" },
+      "rest": {
+        "endpoint": "GET /v1/documents/doc_bbb",
+        "response": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "sourceType": "text",
+            "content": "Document body text."
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Sample Document\n\n**Status:** ready\n**Source:** text\n**Created:** Unknown\n\n## Content\n\nDocument body text.",
+        "structuredContent": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "sourceType": "text",
+            "content": "Document body text."
+          }
+        }
+      }
+    },
+    {
+      "tool": "create_document",
+      "args": {
+        "title": "New Document",
+        "content": "Doc body"
+      },
+      "rest": {
+        "endpoint": "POST /v1/documents",
+        "response": {
+          "data": {
+            "id": "doc_new",
+            "title": "New Document",
+            "status": "pending",
+            "content": "Doc body"
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created document \"New Document\"\n\nID: doc_new",
+        "structuredContent": {
+          "data": {
+            "id": "doc_new",
+            "title": "New Document",
+            "status": "pending",
+            "content": "Doc body"
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_document",
+      "args": {
+        "documentId": "doc_bbb",
+        "content": "Updated body",
+        "changeLog": "Edit pass"
+      },
+      "rest": {
+        "endpoint": "PATCH /v1/documents/doc_bbb",
+        "response": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "currentVersion": 2,
+            "content": "Updated body"
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated document \"Sample Document\"\n\nVersion: 2",
+        "structuredContent": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "currentVersion": 2,
+            "content": "Updated body"
+          }
+        }
+      }
+    },
+    {
+      "tool": "delete_document",
+      "args": { "documentId": "doc_bbb" },
+      "rest": {
+        "endpoint": "DELETE /v1/documents/doc_bbb",
+        "response": null,
+        "status": 204
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully deleted document doc_bbb",
+        "structuredContent": {
+          "id": "doc_bbb",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "delete_document_idempotent",
+      "args": { "documentId": "doc_bbb" },
+      "rest": {
+        "endpoint": "DELETE /v1/documents/doc_bbb",
+        "response": { "error": { "message": "Document not found" } },
+        "status": 404
+      },
+      "expected": {
+        "isError": false,
+        "text": "Document doc_bbb was already deleted (no-op).",
+        "structuredContent": {
+          "id": "doc_bbb",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "get_document_versions",
+      "args": { "documentId": "doc_bbb" },
+      "rest": {
+        "endpoint": "GET /v1/documents/doc_bbb/versions",
+        "response": {
+          "data": [
+            {
+              "id": "vd_002",
+              "version": 2,
+              "title": "Sample Document",
+              "userName": "GitMaxd",
+              "changeLog": "Edit pass",
+              "content": "Document body text."
+            },
+            {
+              "id": "vd_001",
+              "version": 1,
+              "title": "Sample Document",
+              "userName": "GitMaxd",
+              "changeLog": "Initial draft",
+              "content": "Initial body"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Version History (2 versions)\n\n### Version 2 (Latest Snapshot)\n- **ID:** vd_002\n- **Title:** Sample Document\n- **Changed by:** GitMaxd\n- **Change log:** Edit pass\n- **Preview:** Document body text.\n\n### Version 1\n- **ID:** vd_001\n- **Title:** Sample Document\n- **Changed by:** GitMaxd\n- **Change log:** Initial draft\n- **Preview:** Initial body",
+        "structuredContent": {
+          "data": [
+            {
+              "id": "vd_002",
+              "version": 2,
+              "title": "Sample Document",
+              "userName": "GitMaxd",
+              "changeLog": "Edit pass",
+              "content": "Document body text."
+            },
+            {
+              "id": "vd_001",
+              "version": 1,
+              "title": "Sample Document",
+              "userName": "GitMaxd",
+              "changeLog": "Initial draft",
+              "content": "Initial body"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tool": "restore_document_version",
+      "args": { "documentId": "doc_bbb", "versionId": "vd_001" },
+      "rest": {
+        "endpoint": "POST /v1/documents/doc_bbb/restore",
+        "response": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "currentVersion": 3
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully restored document to previous version.\n\nNew version number: 3",
+        "structuredContent": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "currentVersion": 3
+          }
+        }
+      }
+    },
+    {
+      "tool": "list_collections",
+      "args": { "limit": 1 },
+      "rest": {
+        "endpoint": "GET /v1/collections?limit=1",
+        "response": {
+          "data": [
+            {
+              "id": "col_ccc",
+              "name": "Sample Collection",
+              "description": "A sample collection.",
+              "color": "#f97316",
+              "icon": "\ud83d\udcc1",
+              "itemCount": 2
+            }
+          ],
+          "pagination": null
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Found 1 collections:\n\n- \ud83d\udcc1 **Sample Collection** - A sample collection.\n  Items: 2 | ID: col_ccc",
+        "structuredContent": {
+          "data": [
+            {
+              "id": "col_ccc",
+              "name": "Sample Collection",
+              "description": "A sample collection.",
+              "color": "#f97316",
+              "icon": "\ud83d\udcc1",
+              "itemCount": 2
+            }
+          ],
+          "pagination": null
+        }
+      }
+    },
+    {
+      "tool": "get_collection",
+      "args": { "collectionId": "col_ccc" },
+      "rest": {
+        "endpoint": "GET /v1/collections/col_ccc (then GET /v1/collections/col_ccc/items?limit=50)",
+        "response": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          }
+        },
+        "itemsResponse": {
+          "data": [
+            { "title": "Sample Prompt", "itemType": "prompt", "itemId": "prompt_aaa" },
+            { "title": "Sample Document", "itemType": "document", "itemId": "doc_bbb" }
+          ]
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# \ud83d\udcc1 Sample Collection\n\n**Description:** A sample collection.\n**Items:** 2\n**Color:** #f97316\n\n## Items (2)\n\n- **Sample Prompt** (prompt)\n  ID: prompt_aaa\n- **Sample Document** (document)\n  ID: doc_bbb",
+        "structuredContent": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          },
+          "items": [
+            { "title": "Sample Prompt", "itemType": "prompt", "itemId": "prompt_aaa" },
+            { "title": "Sample Document", "itemType": "document", "itemId": "doc_bbb" }
+          ]
+        }
+      }
+    },
+    {
+      "tool": "get_collection_no_items",
+      "args": { "collectionId": "col_ccc", "includeItems": false },
+      "rest": {
+        "endpoint": "GET /v1/collections/col_ccc",
+        "response": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# \ud83d\udcc1 Sample Collection\n\n**Description:** A sample collection.\n**Items:** 2\n**Color:** #f97316",
+        "structuredContent": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          }
+        }
+      }
+    },
+    {
+      "tool": "create_collection",
+      "args": { "name": "New Collection" },
+      "rest": {
+        "endpoint": "POST /v1/collections",
+        "response": {
+          "data": {
+            "id": "col_new",
+            "name": "New Collection",
+            "itemCount": 0
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created collection \"New Collection\"\n\nID: col_new",
+        "structuredContent": {
+          "data": {
+            "id": "col_new",
+            "name": "New Collection",
+            "itemCount": 0
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_collection",
+      "args": { "collectionId": "col_ccc", "name": "Updated Collection" },
+      "rest": {
+        "endpoint": "PATCH /v1/collections/col_ccc",
+        "response": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Updated Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated collection \"Updated Collection\"",
+        "structuredContent": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Updated Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2
+          }
+        }
+      }
+    },
+    {
+      "tool": "delete_collection",
+      "args": { "collectionId": "col_ccc" },
+      "rest": {
+        "endpoint": "DELETE /v1/collections/col_ccc",
+        "response": null,
+        "status": 204
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully deleted collection col_ccc\n\nNote: Documents and prompts that were in this collection are NOT deleted.",
+        "structuredContent": {
+          "id": "col_ccc",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "delete_collection_idempotent",
+      "args": { "collectionId": "col_ccc" },
+      "rest": {
+        "endpoint": "DELETE /v1/collections/col_ccc",
+        "response": { "error": { "message": "Collection not found" } },
+        "status": 404
+      },
+      "expected": {
+        "isError": false,
+        "text": "Collection col_ccc was already deleted (no-op).",
+        "structuredContent": {
+          "id": "col_ccc",
+          "deleted": true
+        }
+      }
+    },
+    {
+      "tool": "add_to_collection",
+      "args": {
+        "collectionId": "col_ccc",
+        "itemIds": ["prompt_aaa", "prompt_bbb"],
+        "itemType": "prompt"
+      },
+      "rest": {
+        "endpoint": "POST /v1/collections/col_ccc/items",
+        "response": {
+          "data": {
+            "added": 2,
+            "alreadyInCollection": 0
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully added 2 prompt(s) to collection\n\nAlready in collection: 0",
+        "structuredContent": {
+          "data": {
+            "added": 2,
+            "alreadyInCollection": 0
+          }
+        }
+      }
+    },
+    {
+      "tool": "remove_from_collection",
+      "args": {
+        "collectionId": "col_ccc",
+        "itemIds": ["prompt_aaa", "prompt_bbb"],
+        "itemType": "prompt"
+      },
+      "rest": {
+        "endpoint": "PUT /v1/collections/col_ccc/items",
+        "response": {
+          "data": {
+            "removed": 2
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully removed 2 prompt(s) from collection",
+        "structuredContent": {
+          "data": {
+            "removed": 2
+          }
+        }
+      }
+    },
+    {
+      "tool": "find_items",
+      "args": { "query": "test", "semantic": true },
+      "rest": {
+        "endpoint": "GET /v1/search?q=test&semantic=true",
+        "response": {
+          "data": {
+            "prompts": [
+              {
+                "promptId": "prompt_aaa",
+                "title": "Sample Prompt",
+                "description": "A sample prompt.",
+                "score": 0.85
+              }
+            ],
+            "documents": [
+              {
+                "documentId": "doc_bbb",
+                "title": "Sample Document",
+                "score": 0.75
+              }
+            ],
+            "collections": [
+              {
+                "collectionId": "col_ccc",
+                "name": "Sample Collection",
+                "matchedItems": 1,
+                "score": 0.65
+              }
+            ]
+          },
+          "meta": { "semantic": true, "query": "test" }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Semantic Search Results for \"test\"\n\n### Prompts (1)\n- **Sample Prompt** (id: prompt_aaa, score: 0.85) - A sample prompt.\n\n### Documents (1)\n- **Sample Document** (id: doc_bbb, score: 0.75)\n\n### Collections (1)\n- **Sample Collection** (id: col_ccc, score: 0.65, 1 matched items)",
+        "structuredContent": {
+          "data": {
+            "prompts": [
+              {
+                "promptId": "prompt_aaa",
+                "title": "Sample Prompt",
+                "description": "A sample prompt.",
+                "score": 0.85
+              }
+            ],
+            "documents": [
+              {
+                "documentId": "doc_bbb",
+                "title": "Sample Document",
+                "score": 0.75
+              }
+            ],
+            "collections": [
+              {
+                "collectionId": "col_ccc",
+                "name": "Sample Collection",
+                "matchedItems": 1,
+                "score": 0.65
+              }
+            ]
+          },
+          "meta": { "semantic": true, "query": "test" }
+        }
+      }
+    },
+    {
+      "tool": "search",
+      "exempt": true,
+      "exemptReason": "OpenAI Apps SDK Company-Knowledge contract requires JSON-as-text. structuredContent mirrors the same JSON for uniformity.",
+      "args": { "query": "test" },
+      "rest": {
+        "endpoint": "GET /v1/search?q=test&semantic=true",
+        "response": {
+          "data": {
+            "prompts": [
+              { "promptId": "aaa", "title": "Sample Prompt" }
+            ],
+            "documents": [
+              { "documentId": "bbb", "title": "Sample Document" }
+            ],
+            "collections": [
+              { "collectionId": "ccc", "name": "Sample Collection" }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "{\"results\":[{\"id\":\"prompt_aaa\",\"title\":\"Sample Prompt\",\"url\":\"https://contextrepo.com/dashboard/prompts/aaa\"},{\"id\":\"document_bbb\",\"title\":\"Sample Document\",\"url\":\"https://contextrepo.com/dashboard/documents/bbb\"},{\"id\":\"collection_ccc\",\"title\":\"Sample Collection\",\"url\":\"https://contextrepo.com/dashboard/collections/ccc\"}]}",
+        "structuredContent": {
+          "results": [
+            {
+              "id": "prompt_aaa",
+              "title": "Sample Prompt",
+              "url": "https://contextrepo.com/dashboard/prompts/aaa"
+            },
+            {
+              "id": "document_bbb",
+              "title": "Sample Document",
+              "url": "https://contextrepo.com/dashboard/documents/bbb"
+            },
+            {
+              "id": "collection_ccc",
+              "title": "Sample Collection",
+              "url": "https://contextrepo.com/dashboard/collections/ccc"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tool": "fetch",
+      "exempt": true,
+      "exemptReason": "OpenAI Apps SDK Company-Knowledge contract requires JSON-as-text. structuredContent mirrors the same JSON for uniformity.",
+      "args": { "id": "prompt_aaa" },
+      "rest": {
+        "endpoint": "GET /v1/prompts/aaa (decoded from prompt_aaa)",
+        "response": {
+          "data": {
+            "id": "aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "content": "Hello ${input}!"
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "{\"id\":\"prompt_aaa\",\"title\":\"Sample Prompt\",\"text\":\"# Sample Prompt\\n\\nA sample prompt.\\n\\nHello ${input}!\",\"url\":\"https://contextrepo.com/dashboard/prompts/aaa\",\"metadata\":{\"type\":\"prompt\"}}",
+        "structuredContent": {
+          "id": "prompt_aaa",
+          "title": "Sample Prompt",
+          "text": "# Sample Prompt\n\nA sample prompt.\n\nHello ${input}!",
+          "url": "https://contextrepo.com/dashboard/prompts/aaa",
+          "metadata": { "type": "prompt" }
+        }
+      }
+    },
+    {
+      "tool": "deep_search",
+      "args": { "query": "test" },
+      "rest": {
+        "endpoint": "POST /v1/pd/search",
+        "response": {
+          "data": {
+            "results": [
+              {
+                "chunkId": "chunk_ddd",
+                "score": 0.95,
+                "level": "paragraph",
+                "documentTitle": "Sample Document",
+                "documentId": "doc_bbb",
+                "content": "Sample chunk content.",
+                "parentId": "chunk_eee",
+                "siblingIds": {
+                  "prev": "chunk_fff",
+                  "next": "chunk_ggg"
+                }
+              }
+            ],
+            "meta": { "query": "test", "totalResults": 1 }
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Progressive Disclosure Search: \"test\"\n\n**Total Results:** 1\n\n### Result 1\n- **chunkId:** chunk_ddd\n- **Score:** 0.95\n- **Level:** paragraph\n- **Document:** Sample Document (doc_bbb)\n- **Content:** Sample chunk content.\n- **Parent:** chunk_eee\n- **Prev Sibling:** chunk_fff\n- **Next Sibling:** chunk_ggg",
+        "structuredContent": {
+          "data": {
+            "results": [
+              {
+                "chunkId": "chunk_ddd",
+                "score": 0.95,
+                "level": "paragraph",
+                "documentTitle": "Sample Document",
+                "documentId": "doc_bbb",
+                "content": "Sample chunk content.",
+                "parentId": "chunk_eee",
+                "siblingIds": {
+                  "prev": "chunk_fff",
+                  "next": "chunk_ggg"
+                }
+              }
+            ],
+            "meta": { "query": "test", "totalResults": 1 }
+          }
+        }
+      }
+    },
+    {
+      "tool": "deep_read",
+      "args": { "chunkId": "chunk_ddd" },
+      "rest": {
+        "endpoint": "GET /v1/pd/read/chunk_ddd",
+        "response": {
+          "data": {
+            "chunkId": "chunk_ddd",
+            "level": "paragraph",
+            "content": "Sample chunk content.",
+            "hierarchy": {
+              "documentTitle": "Sample Document",
+              "documentId": "doc_bbb",
+              "sectionPath": "/intro",
+              "position": {
+                "chunkIndex": 0,
+                "parentChunkId": "chunk_parent",
+                "prevSiblingId": "chunk_prev",
+                "nextSiblingId": "chunk_next"
+              }
+            },
+            "metadata": {
+              "wordCount": 3,
+              "startIndex": 0,
+              "endIndex": 21,
+              "headingText": "Intro"
+            }
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Chunk Details\n\n- **chunkId:** chunk_ddd\n- **Level:** paragraph\n- **Content:**\n\nSample chunk content.\n\n### Hierarchy\n- **Document:** Sample Document (doc_bbb)\n- **Section Path:** /intro\n\n### Position\n- **Chunk Index:** 0\n- **Parent Chunk:** chunk_parent\n- **Prev Sibling:** chunk_prev\n- **Next Sibling:** chunk_next\n\n### Metadata\n- **Word Count:** 3\n- **Start Index:** 0\n- **End Index:** 21\n- **Heading:** Intro\n\n> Use deep_expand with this chunkId to navigate to related chunks.",
+        "structuredContent": {
+          "data": {
+            "chunkId": "chunk_ddd",
+            "level": "paragraph",
+            "content": "Sample chunk content.",
+            "hierarchy": {
+              "documentTitle": "Sample Document",
+              "documentId": "doc_bbb",
+              "sectionPath": "/intro",
+              "position": {
+                "chunkIndex": 0,
+                "parentChunkId": "chunk_parent",
+                "prevSiblingId": "chunk_prev",
+                "nextSiblingId": "chunk_next"
+              }
+            },
+            "metadata": {
+              "wordCount": 3,
+              "startIndex": 0,
+              "endIndex": 21,
+              "headingText": "Intro"
+            }
+          }
+        }
+      }
+    },
+    {
+      "tool": "deep_expand",
+      "args": { "chunkId": "chunk_ddd", "direction": "surrounding" },
+      "rest": {
+        "endpoint": "POST /v1/pd/expand",
+        "response": {
+          "data": {
+            "chunks": [
+              {
+                "_id": "chunk_ddd",
+                "level": "paragraph",
+                "chunkIndex": 0,
+                "documentTitle": "Sample Document",
+                "documentId": "doc_bbb",
+                "parentId": "chunk_eee",
+                "content": "Sample chunk content."
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "## Surrounding chunks\n\n**Direction:** surrounding | **Results:** 1\n\n### Chunk 1\n- **chunkId:** chunk_ddd\n- **Level:** paragraph\n- **Chunk Index:** 0\n- **Document:** Sample Document (doc_bbb)\n- **Parent:** chunk_eee\n- **Content:** Sample chunk content.",
+        "structuredContent": {
+          "data": {
+            "chunks": [
+              {
+                "_id": "chunk_ddd",
+                "level": "paragraph",
+                "chunkIndex": 0,
+                "documentTitle": "Sample Document",
+                "documentId": "doc_bbb",
+                "parentId": "chunk_eee",
+                "content": "Sample chunk content."
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "tool": "deep_expand_empty",
+      "args": { "chunkId": "chunk_stale", "direction": "surrounding" },
+      "rest": {
+        "endpoint": "POST /v1/pd/expand",
+        "response": {
+          "data": { "chunks": [] }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "No chunks found in that direction. If this chunkId was returned from a very recently created document, re-run deep_search to obtain fresh chunkIds \u2014 the chunk tree may have been rebuilt while the document was being indexed.",
+        "structuredContent": {
+          "data": { "chunks": [] }
+        }
+      }
+    }
+  ]
+}
