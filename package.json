@@ -1,6 +1,6 @@
 {
   "name": "context-repo-mcp",
-  "version": "1.5.5",
+  "version": "2.0.0",
   "description": "MCP Server for Context Repo - connect any MCP client to your prompts, documents, and collections",
   "type": "module",
   "main": "src/index.js",
