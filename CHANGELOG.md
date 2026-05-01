@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/__tests__/restore-prompt-version.test.js` — `New version:` → `New version number:`.
 - `src/__tests__/delete-idempotency.test.js` — `Deleted prompt p1` → `Successfully deleted prompt p1`, plus new `result.structuredContent` assertions.
 
+### Removed
+- **Claude Desktop Extension (.mcpb) packaging dropped.** Anthropic has shifted Claude.ai and Claude Desktop to remote OAuth-MCP servers, deprecating the local `.mcpb` extension flow that this package shipped through 1.5.x. Removed: `claude-extension/` directory (manifest.json, icon, server stub), `scripts/build-mcpb.js`, the `build:mcpb` script in `package.json`, the `build-mcpb` jobs from both `.github/workflows/ci.yml` and `.github/workflows/publish.yml`, and the corresponding `claude-extension/*` and `*.mcpb` lines in `.gitignore`. Existing Claude Desktop users on prior `.mcpb` installs are unaffected mid-session but should migrate to the remote OAuth-MCP server when ready. The npm package (`npx context-repo-mcp`) remains the supported install path for Claude Code, Cursor, Windsurf, Factory Droid, and any stdio-MCP client.
+
 ### Notes
 - This release contains **npm-package-only behavior changes**. The web `/mcp` server in the GitMaxd-Prompts repo (`app/[transport]/route.ts`) has been migrated to the same Markdown + structuredContent contract in Phase 2 of the MCP Server Alignment mission (2026-04-30); this v2.0.0 brings the npm CLI to parity.
 - Test totals: **513 passed, 8 skipped** (was 422 + 91 new = 513). No baseline regressions.
