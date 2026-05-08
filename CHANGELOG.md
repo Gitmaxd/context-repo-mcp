@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-05-08
+
+### Changed
+- Sharpen `search_prompts`, `find_items`, and `deep_search` tool descriptions to make the search-routing contract explicit: `find_items` is the only tool that surfaces prompts in semantic results, and `deep_search` / `deep_read` / `deep_expand` operate on document chunks only (prompts are stored as single embeddings in a separate index, not in the chunk hierarchy). Mirrors the same change shipped to the hosted `contextrepo.com/mcp` server in https://github.com/Gitmaxd/gitmaxd-prompts/pull/182, restoring the byte-for-byte alignment v2.0.0 was built around.
+
+### Fixed
+- Removed the misleading "for full body-text search use deep_search" clause from `find_items`, which suggested `deep_search` was a stronger general search; in practice it has no visibility into prompts.
+
 ## [2.0.0] - 2026-04-30
 
 ### Breaking changes

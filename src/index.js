@@ -228,7 +228,7 @@ function getId(obj) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "2.0.0",
+    version: "2.0.1",
   },
   {
     capabilities: {
@@ -261,7 +261,8 @@ const TOOLS = [
   {
     name: "search_prompts",
     description:
-      "List all prompts belonging to the authenticated user. Returns prompt titles, descriptions, and metadata. " +
+      "List prompts belonging to the authenticated user with optional full-text (literal) match on title, description, and content. " +
+      "For semantic / natural-language matching of prompts, use find_items. " +
       "Use this to browse your prompt library, find templates by keyword, or get prompt IDs needed for " +
       "read_prompt, update_prompt, and delete_prompt operations.",
     inputSchema: {
@@ -628,7 +629,8 @@ const TOOLS = [
       "specific prompt/document/collection before operating on it. Supports filtering by type " +
       "(prompts, documents, collections) and toggling between semantic (default) and literal matching " +
       "modes. Literal mode (semantic=false) searches titles, descriptions, and the first ~4 KiB of " +
-      "document content; for full body-text search use deep_search.",
+      "document content; for full body-text passage search inside documents, use deep_search. " +
+      "find_items is the only tool that surfaces prompts in semantic results — deep_search operates on document chunks only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -661,7 +663,8 @@ const TOOLS = [
       "chunkIds with deep_read to inspect full chunk details, or deep_expand to navigate up/down/next/previous/" +
       "surrounding in the document tree. Ideal for answering specific questions, finding passages, or progressively " +
       "exploring large documents without loading everything at once. Supports session-based deduplication, and " +
-      "filtering by collection or document.",
+      "filtering by collection or document. " +
+      "Scope: documents only. Prompts are stored as single embeddings in a separate index and are not reachable through deep_search, deep_read, or deep_expand — use find_items or search_prompts for prompts.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1300,7 +1303,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v2.0.0                   ║");
+  console.error("║              Context Repo MCP Server v2.0.1                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
