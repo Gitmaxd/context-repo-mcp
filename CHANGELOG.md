@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-05-17
+
+### Fixed
+- **Coerce stringified array args at the tool boundary.** When an upstream MCP client delivers a contractually array-of-string field as a JSON-encoded string (e.g. `"[]"`, `'["a","b"]'`) instead of a native array, the server now unstringifies it at the trust boundary before forwarding to the REST surface. Without this shim those calls surfaced as opaque `Invalid id format` (on `create_document`) or `Missing required fields: itemIds (array), itemType (document|prompt)` (on `add_to_collection`) responses, even when the LLM's outward tool call was correctly shaped. Observed with Factory Droid's deferred-tools routing path, where the first call to a tool whose JSON schema had not been explicitly loaded delivered array fields as JSON strings. Applied to `create_document.tags`, `add_to_collection.itemIds`, and `remove_from_collection.itemIds`. No-op for well-behaved clients — native arrays pass through unchanged.
+
+### Notes
+- 513 passing tests (8 skipped, unchanged from 2.0.1).
+- Internal version banner bumped from "v2.0.1" to "v2.0.2".
+
 ## [2.0.1] - 2026-05-08
 
 ### Changed
