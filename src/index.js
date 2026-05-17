@@ -1112,7 +1112,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               type: "text",
               text: formatCreateDocument(docForFormatter, {
                 title: args.title,
-                tags: args.tags,
+                tags: coerceArray(args.tags),
               }),
             },
           ],
