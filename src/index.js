@@ -268,7 +268,7 @@ function coerceArray(value, fallback = []) {
 const server = new Server(
   {
     name: "context-repo",
-    version: "2.0.2",
+    version: "2.0.3",
   },
   {
     capabilities: {
@@ -1343,7 +1343,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v2.0.2                   ║");
+  console.error("║              Context Repo MCP Server v2.0.3                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);

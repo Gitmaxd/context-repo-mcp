@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-05-17
+
+### Fixed
+- **`create_document.tags` formatter crash.** Complete the 2.0.2 stringified-array coercion sweep: the success-message formatter was still being handed the raw `args.tags`, so MCP clients that delivered `tags` as a JSON-encoded string (the Factory Droid deferred-tools routing path that 2.0.2 set out to neutralize) surfaced `Error: args.tags.join is not a function` even though the REST write itself succeeded. Diagnosed in a fresh-session probe against 2.0.2 with five tag shapes; reproduced deterministically on every non-array shape. Now coerced through the same `coerceArray` helper used for the REST body, keeping `_format.js` a pure renderer of a typed contract. No-op for native-array clients (Claude Desktop, Cursor, VS Code, Windsurf, ChatGPT, MCP Inspector) — output is byte-identical and locked by the new test suite.
+
+### Notes
+- New regression suite `src/__tests__/create-document-tags-coercion.test.js` pins both the REST body and the formatter input to the coerced value across six tag shapes (3 well-behaved, 3 healing), preventing the two call sites from drifting apart again.
+- Internal version banner bumped from "v2.0.2" to "v2.0.3".
+
 ## [2.0.2] - 2026-05-17
 
 ### Fixed
