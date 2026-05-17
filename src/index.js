@@ -221,6 +221,46 @@ function getId(obj) {
   return obj?.id ?? obj?._id ?? null;
 }
 
+/**
+ * Coerces an inbound tool argument that is contractually an array-of-strings
+ * but may have been delivered as a JSON-encoded string by an upstream MCP
+ * client whose deferred-tool routing path stringifies array args.
+ *
+ * Observed in the wild with Factory Droid's deferred-tools mode: the first
+ * call to a tool whose JSON schema has not been explicitly loaded sometimes
+ * arrives with array fields wrapped as `"[]"` or `'["a","b"]'` strings.
+ * That malformed value gets forwarded to the Convex HTTP surface, where the
+ * `v.array(v.string())` validator rejects it with `ArgumentValidationError`
+ * and the translator surfaces an opaque "Invalid id format" / "Missing
+ * required fields" response. Coercing here at the MCP trust boundary heals
+ * the call without any server-side change.
+ *
+ *   coerceArray(["a","b"])      -> ["a","b"]   (no-op for well-behaved clients)
+ *   coerceArray([])             -> []
+ *   coerceArray('["a","b"]')    -> ["a","b"]
+ *   coerceArray("[]")           -> []
+ *   coerceArray("docId")        -> ["docId"]   (single-string fallback)
+ *   coerceArray(undefined)      -> fallback (default [])
+ *   coerceArray(null)           -> fallback (default [])
+ *   coerceArray(42)             -> fallback (refuses to forward nonsense)
+ */
+function coerceArray(value, fallback = []) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return fallback;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return fallback;
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Not JSON — fall through to single-value wrapping.
+    }
+    return [value];
+  }
+  return fallback;
+}
+
 // =============================================================================
 // MCP SERVER SETUP
 // =============================================================================
@@ -1003,7 +1043,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "add_to_collection": {
         const result = await apiRequest("POST", `/v1/collections/${args.collectionId}/items`, {
-          itemIds: args.itemIds,
+          itemIds: coerceArray(args.itemIds),
           itemType: args.itemType,
         });
         return {
@@ -1019,7 +1059,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "remove_from_collection": {
         const result = await apiRequest("PUT", `/v1/collections/${args.collectionId}/items`, {
-          itemIds: args.itemIds,
+          itemIds: coerceArray(args.itemIds),
           itemType: args.itemType,
         });
         return {
@@ -1058,7 +1098,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await apiRequest("POST", "/v1/documents", {
           title: args.title,
           content: args.content,
-          tags: args.tags || [],
+          tags: coerceArray(args.tags),
         });
 
         // formatCreateDocument() reads `_id ?? id` so legacy raw-doc
