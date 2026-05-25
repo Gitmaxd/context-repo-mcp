@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Phase 4 (PR-N, 2026-05-24) regression suite for v2.0.4.
+// Phase 4 (PR-N, 2026-05-24) regression suite for v2.1.0.
 //
 // 1. Filter handlers — search_prompts, list_collections, list_documents,
 //    find_items — accept `tags: string[]` and join into the upstream
@@ -426,7 +426,7 @@ describe("Phase 4 — TOOLS inputSchema source-shape pins", () => {
     );
   });
 
-  // Write tools that gain tags in v2.0.4 (5)
+  // Write tools that gain tags in v2.1.0 (5)
   it("create_prompt inputSchema declares tags as string[]", () => {
     expect(toolSlice("create_prompt")).toMatch(
       /tags:\s*\{\s*type:\s*['"]array['"],\s*items:\s*\{\s*type:\s*['"]string['"]/,
