@@ -205,6 +205,8 @@ Or if installed globally:
 
 Once connected, your MCP client can use these tools:
 
+> **Tags everywhere.** As of v2.0.4, ten tools accept an optional `tags: string[]` argument. Filter tools (`search_prompts`, `list_collections`, `list_documents`, `find_items`) AND-match the supplied tags. Write tools (`create_prompt`, `update_prompt`, `create_document`, `update_document`, `create_collection`, `update_collection`) round-trip tags through the REST surface; on `update_*` tools, omit `tags` to leave the row untouched or send `tags: []` to clear all.
+
 ### Prompts (7 tools)
 
 | Tool | Description |

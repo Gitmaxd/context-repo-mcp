@@ -316,6 +316,11 @@ const TOOLS = [
           type: "number",
           description: "Maximum number of results to return (default: 20, max: 100)",
         },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tag filter (AND-semantics: all tags must match)",
+        },
       },
     },
   },
@@ -349,6 +354,11 @@ const TOOLS = [
         description: { type: "string", description: "Brief description of what the prompt does" },
         content: { type: "string", description: "The prompt template content (free-form text)." },
         engine: { type: "string", description: "Target AI model (e.g., 'gpt-4', 'claude-3', 'gemini-pro')" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tags for categorizing the prompt",
+        },
       },
       required: ["title", "description", "content", "engine"],
     },
@@ -368,6 +378,11 @@ const TOOLS = [
         description: { type: "string", description: "New description (optional)" },
         content: { type: "string", description: "New content (optional)" },
         changeLog: { type: "string", description: "Description of what changed (for version history)" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Replace tags (send [] to clear all tags)",
+        },
       },
       required: ["promptId"],
     },
@@ -437,6 +452,11 @@ const TOOLS = [
       properties: {
         search: { type: "string", description: "Search term to filter collections by name or description" },
         limit: { type: "number", description: "Maximum number of results to return (default: 20, max: 100)" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tag filter (AND-semantics: all tags must match)",
+        },
       },
     },
   },
@@ -469,6 +489,11 @@ const TOOLS = [
         description: { type: "string", description: "Description of what the collection contains" },
         color: { type: "string", description: "Color code for the collection (e.g., #f97316)" },
         icon: { type: "string", description: "Emoji icon for the collection" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tags for the collection",
+        },
       },
       required: ["name"],
     },
@@ -488,6 +513,11 @@ const TOOLS = [
         description: { type: "string", description: "New description" },
         color: { type: "string", description: "New color code" },
         icon: { type: "string", description: "New emoji icon" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Replace tags (send [] to clear all tags)",
+        },
       },
       required: ["collectionId"],
     },
@@ -555,6 +585,11 @@ const TOOLS = [
         collectionId: { type: "string", description: "Filter to documents in a specific collection" },
         search: { type: "string", description: "Search term to filter documents by title" },
         limit: { type: "number", description: "Maximum number of results to return (default: 20, max: 100)" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tag filter (AND-semantics: all tags must match)",
+        },
       },
     },
   },
@@ -602,6 +637,11 @@ const TOOLS = [
         title: { type: "string", description: "New title (optional)" },
         content: { type: "string", description: "New content (optional)" },
         changeLog: { type: "string", description: "Description of what changed (for version history)" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Replace tags (send [] to clear all tags)",
+        },
       },
       required: ["documentId"],
     },
@@ -686,6 +726,11 @@ const TOOLS = [
         semantic: {
           type: "boolean",
           description: "Use semantic search for natural language understanding (default: true). Set to false for exact literal matching.",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tag filter (AND-semantics: all tags must match)",
         },
       },
       required: ["query"],
@@ -848,6 +893,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const params = new URLSearchParams();
         if (args.search) params.set("q", args.search);
         if (args.limit) params.set("limit", String(args.limit));
+        if (Array.isArray(args.tags) && args.tags.length > 0) {
+          params.set("tags", args.tags.join(","));
+        }
 
         const result = await apiRequest("GET", `/v1/prompts?${params}`);
         return {
@@ -865,6 +913,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_prompt": {
+        const tagsArr = coerceArray(args.tags);
         const result = await apiRequest("POST", "/v1/prompts", {
           title: args.title,
           description: args.description,
@@ -872,6 +921,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           engine: args.engine,
           parameters: {},
           variables: [],
+          tags: tagsArr,
         });
 
         // The web `/mcp` server reads `id` directly from the canonical
@@ -883,16 +933,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           engine: args.engine,
         };
         return {
-          content: [{ type: "text", text: formatCreatePrompt(promptForFormatter) }],
+          content: [
+            {
+              type: "text",
+              text: formatCreatePrompt(promptForFormatter, { tags: tagsArr }),
+            },
+          ],
           structuredContent: result,
         };
       }
 
       case "update_prompt": {
-        const { promptId, ...updates } = args;
-        const result = await apiRequest("PATCH", `/v1/prompts/${promptId}`, updates);
+        const body = {};
+        if (args.title !== undefined) body.title = args.title;
+        if (args.description !== undefined) body.description = args.description;
+        if (args.content !== undefined) body.content = args.content;
+        if (args.changeLog !== undefined) body.changeLog = args.changeLog;
+        const tagsForBody =
+          args.tags !== undefined ? coerceArray(args.tags) : undefined;
+        if (tagsForBody !== undefined) body.tags = tagsForBody;
+        const result = await apiRequest(
+          "PATCH",
+          `/v1/prompts/${args.promptId}`,
+          body,
+        );
         return {
-          content: [{ type: "text", text: formatUpdatePrompt(result.data) }],
+          content: [
+            {
+              type: "text",
+              text: formatUpdatePrompt(result.data, { tags: tagsForBody }),
+            },
+          ],
           structuredContent: result,
         };
       }
@@ -943,6 +1014,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const params = new URLSearchParams();
         if (args.search) params.set("search", args.search);
         if (args.limit) params.set("limit", String(args.limit));
+        if (Array.isArray(args.tags) && args.tags.length > 0) {
+          params.set("tags", args.tags.join(","));
+        }
 
         const result = await apiRequest("GET", `/v1/collections?${params}`);
         return {
@@ -984,11 +1058,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_collection": {
+        const tagsArr = coerceArray(args.tags);
         const result = await apiRequest("POST", "/v1/collections", {
           name: args.name,
           description: args.description,
           color: args.color,
           icon: args.icon,
+          tags: tagsArr,
         });
 
         const collectionForFormatter = { id: getId(result.data) };
@@ -1000,6 +1076,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 name: args.name,
                 icon: args.icon,
                 color: args.color,
+                tags: tagsArr,
               }),
             },
           ],
@@ -1008,10 +1085,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "update_collection": {
-        const { collectionId, ...updates } = args;
-        const result = await apiRequest("PATCH", `/v1/collections/${collectionId}`, updates);
+        const body = {};
+        if (args.name !== undefined) body.name = args.name;
+        if (args.description !== undefined) body.description = args.description;
+        if (args.color !== undefined) body.color = args.color;
+        if (args.icon !== undefined) body.icon = args.icon;
+        const tagsForBody =
+          args.tags !== undefined ? coerceArray(args.tags) : undefined;
+        if (tagsForBody !== undefined) body.tags = tagsForBody;
+        const result = await apiRequest(
+          "PATCH",
+          `/v1/collections/${args.collectionId}`,
+          body,
+        );
         return {
-          content: [{ type: "text", text: formatUpdateCollection(result.data) }],
+          content: [
+            {
+              type: "text",
+              text: formatUpdateCollection(result.data, { tags: tagsForBody }),
+            },
+          ],
           structuredContent: result,
         };
       }
@@ -1078,6 +1171,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.collectionId) params.set("collectionId", args.collectionId);
         if (args.search) params.set("search", args.search);
         if (args.limit) params.set("limit", String(args.limit));
+        if (Array.isArray(args.tags) && args.tags.length > 0) {
+          params.set("tags", args.tags.join(","));
+        }
 
         const result = await apiRequest("GET", `/v1/documents?${params}`);
         return {
@@ -1121,10 +1217,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "update_document": {
-        const { documentId, ...updates } = args;
-        const result = await apiRequest("PATCH", `/v1/documents/${documentId}`, updates);
+        const body = {};
+        if (args.title !== undefined) body.title = args.title;
+        if (args.content !== undefined) body.content = args.content;
+        if (args.changeLog !== undefined) body.changeLog = args.changeLog;
+        const tagsForBody =
+          args.tags !== undefined ? coerceArray(args.tags) : undefined;
+        if (tagsForBody !== undefined) body.tags = tagsForBody;
+        const result = await apiRequest(
+          "PATCH",
+          `/v1/documents/${args.documentId}`,
+          body,
+        );
         return {
-          content: [{ type: "text", text: formatUpdateDocument(result.data) }],
+          content: [
+            {
+              type: "text",
+              text: formatUpdateDocument(result.data, { tags: tagsForBody }),
+            },
+          ],
           structuredContent: result,
         };
       }
@@ -1181,6 +1292,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         params.set("q", args.query);
         if (args.type) params.set("type", args.type);
         if (args.semantic === false) params.set("semantic", "false");
+        if (Array.isArray(args.tags) && args.tags.length > 0) {
+          params.set("tags", args.tags.join(","));
+        }
 
         const result = await apiRequest("GET", `/v1/search?${params}`);
         const useSemantic = args.semantic !== false;
