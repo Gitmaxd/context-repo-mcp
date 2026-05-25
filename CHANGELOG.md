@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-05-25
+
+### Added
+- **Tags first-class on the npm tool surface.** Nine tools now accept an optional `tags: string[]` argument and round-trip it through the REST surface byte-identically with the web `/mcp` server. Filter tools (`search_prompts`, `list_collections`, `list_documents`, `find_items`) thread the value through `?tags=a,b` AND-semantics. Write tools (`create_prompt`, `update_prompt`, `create_collection`, `update_collection`, `update_document`) forward the value into the REST body; `update_*` tools follow Phase B's replace model — omit `tags` to leave the row untouched, send `tags: []` to clear all. (`create_document` already shipped tags in v2.0.3.) Read-side renderings (`read_prompt`, `get_document`, `get_collection`) emit a `**Tags:** a, b` line when present and stay byte-identical when absent.
+- **Nine new `*_with_tags` canonical fixtures** mirroring the web's tag-aware contract surface. The local copy is synced via `scripts/sync-mcp-fixture.sh` and locked by SHA-256 drift guard. Existing 33 tagless fixtures remain byte-identical.
+- **52 new tests:** `tags-tool-shape.test.js` (36 — filter joins, create coercion, update explicit-body refactor, source-shape inputSchema pins) and `tag-rendering.test.js` (16 — formatter conditional emission across 8 formatters).
+
+### Changed
+- **Three update tool handlers refactored from `{ id, ...updates }` spread to explicit-body construction.** `update_prompt`, `update_collection`, and `update_document` now enumerate every field with `!== undefined` guards and route `tags` through the existing `coerceArray()` helper. The previous spread idiom bypassed coercion, so a Factory-Droid-style stringified `tags` value would have been forwarded verbatim to the Convex `v.array(v.string())` validator and rejected with `ArgumentValidationError`. Non-tag field forwarding is preserved by regression tests.
+- **Eight formatters in `_format.js` extended to render tags conditionally.** `formatReadPrompt`, `formatGetDocument`, `formatGetCollection` insert a `**Tags:** ...` line when the source row carries non-empty tags. `formatCreatePrompt`, `formatUpdatePrompt`, `formatUpdateDocument`, `formatCreateCollection`, `formatUpdateCollection` append a `Tags: ...` suffix when the corresponding `args.tags` is non-empty. Empty arrays and absent values produce zero output bytes — the 33 pre-existing fixtures remain byte-identical.
+- **Contract-test dispatcher in `mcp-response-contract.test.js` accepts `<tool>_with_tags` fixture suffix** via a one-line `baseTool = fixture.tool.replace(/_with_tags$/, "")` strip, then routes through the same per-tool branches with `args.tags` threaded into the success-formatter call sites.
+- **Internal version banner bumped from "v2.0.3" to "v2.0.4".**
+
+### Notes
+- **595 passing tests** (8 skipped). The single transient drift-guard failure during Phase 4 was resolved by Phase 5's canonical sync; final suite is fully green.
+- **Strictly additive, no breaking changes.** Every `tags` argument is optional; every existing call shape remains valid. The contract surface is byte-identical for callers that do not use tags.
+- Cross-surface alignment: the web `/mcp` server's matching ship lives at https://github.com/Gitmaxd/gitmaxd-prompts/pull/216 (PR-W of the MCP Tag Surface Sync mission, merged 2026-05-25). This release is PR-N of the same mission.
+
 ## [2.0.3] - 2026-05-17
 
 ### Fixed

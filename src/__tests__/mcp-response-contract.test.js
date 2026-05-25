@@ -94,7 +94,12 @@ function formatFixture(fixture) {
   const response = fixture.rest?.response ?? {};
   const data = response.data;
 
-  switch (fixture.tool) {
+  // Phase 5 (2026-05-24): tag-aware fixtures use `<tool>_with_tags`
+  // suffix and route through the same per-tool branches; the formatter
+  // tags branch is conditional on args.tags / data.tags presence.
+  const baseTool = fixture.tool.replace(/_with_tags$/, "");
+
+  switch (baseTool) {
     case "get_user_info":
       return formatGetUserInfo(data);
     case "search_prompts":
@@ -102,9 +107,9 @@ function formatFixture(fixture) {
     case "read_prompt":
       return formatReadPrompt(data);
     case "create_prompt":
-      return formatCreatePrompt(data);
+      return formatCreatePrompt(data, { tags: args.tags });
     case "update_prompt":
-      return formatUpdatePrompt(data);
+      return formatUpdatePrompt(data, { tags: args.tags });
     case "delete_prompt":
       return formatDeletePrompt(args.promptId);
     case "delete_prompt_idempotent":
@@ -123,7 +128,7 @@ function formatFixture(fixture) {
         tags: args.tags,
       });
     case "update_document":
-      return formatUpdateDocument(data);
+      return formatUpdateDocument(data, { tags: args.tags });
     case "delete_document":
       return formatDeleteDocument(args.documentId);
     case "delete_document_idempotent":
@@ -145,9 +150,10 @@ function formatFixture(fixture) {
         name: args.name,
         icon: args.icon,
         color: args.color,
+        tags: args.tags,
       });
     case "update_collection":
-      return formatUpdateCollection(data);
+      return formatUpdateCollection(data, { tags: args.tags });
     case "delete_collection":
       return formatDeleteCollection(args.collectionId);
     case "delete_collection_idempotent":

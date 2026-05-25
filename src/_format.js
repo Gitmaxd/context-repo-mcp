@@ -92,6 +92,7 @@ export function formatSearchPrompts(response) {
  *   currentVersion?: unknown,
  *   content?: unknown,
  *   variables?: Array<{ name: string, description?: string }>,
+ *   tags?: string[],
  * }} prompt
  * @returns {string}
  */
@@ -104,12 +105,19 @@ export function formatReadPrompt(prompt) {
           .join("\n")}`
       : "";
 
+  // Phase 5 — conditional Tags line keeps tagless output byte-identical.
+  const tagsLine =
+    prompt?.tags && prompt.tags.length > 0
+      ? `**Tags:** ${prompt.tags.join(", ")}\n\n`
+      : "";
+
   return (
     `# ${prompt.title}\n\n` +
     `**Description:** ${prompt.description}\n` +
     `**Engine:** ${prompt.engine}\n` +
     `**Version:** ${prompt.currentVersion}\n` +
     `**Public:** ${prompt.isPublic ? "Yes" : "No"}\n\n` +
+    tagsLine +
     `## Content\n\n` +
     "```\n" +
     `${prompt.content}\n` +
@@ -120,18 +128,24 @@ export function formatReadPrompt(prompt) {
 
 /**
  * @param {{ title?: unknown, id?: unknown, engine?: unknown }} prompt
+ * @param {{ tags?: string[] }} [args]
  * @returns {string}
  */
-export function formatCreatePrompt(prompt) {
-  return `Successfully created prompt "${prompt.title}"\n\nID: ${prompt.id}\nEngine: ${prompt.engine}`;
+export function formatCreatePrompt(prompt, args) {
+  const tagsSuffix =
+    args?.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
+  return `Successfully created prompt "${prompt.title}"\n\nID: ${prompt.id}\nEngine: ${prompt.engine}${tagsSuffix}`;
 }
 
 /**
  * @param {{ title?: unknown, currentVersion?: unknown }} prompt
+ * @param {{ tags?: string[] }} [args]
  * @returns {string}
  */
-export function formatUpdatePrompt(prompt) {
-  return `Successfully updated prompt "${prompt.title}"\n\nVersion: ${prompt.currentVersion}`;
+export function formatUpdatePrompt(prompt, args) {
+  const tagsSuffix =
+    args?.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
+  return `Successfully updated prompt "${prompt.title}"\n\nVersion: ${prompt.currentVersion}${tagsSuffix}`;
 }
 
 /**
@@ -222,6 +236,7 @@ export function formatListDocuments(response) {
  *   sourceUrl?: unknown,
  *   createdAt?: unknown,
  *   content?: unknown,
+ *   tags?: string[],
  * }} document
  * @returns {string}
  */
@@ -231,11 +246,18 @@ export function formatGetDocument(document) {
     : "Unknown";
   const sourceUrlSuffix = document?.sourceUrl ? ` (${document.sourceUrl})` : "";
 
+  // Phase 5 — conditional Tags line keeps tagless output byte-identical.
+  const tagsLine =
+    document?.tags && document.tags.length > 0
+      ? `**Tags:** ${document.tags.join(", ")}\n\n`
+      : "";
+
   return (
     `# ${document.title}\n\n` +
     `**Status:** ${document.status}\n` +
     `**Source:** ${document.sourceType || "text"}${sourceUrlSuffix}\n` +
     `**Created:** ${createdAt}\n\n` +
+    tagsLine +
     `## Content\n\n` +
     `${document.content || "*No content available*"}`
   );
@@ -257,10 +279,13 @@ export function formatCreateDocument(document, args) {
 
 /**
  * @param {{ title?: unknown, currentVersion?: unknown }} document
+ * @param {{ tags?: string[] }} [args]
  * @returns {string}
  */
-export function formatUpdateDocument(document) {
-  return `Successfully updated document "${document.title}"\n\nVersion: ${document.currentVersion}`;
+export function formatUpdateDocument(document, args) {
+  const tagsSuffix =
+    args?.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
+  return `Successfully updated document "${document.title}"\n\nVersion: ${document.currentVersion}${tagsSuffix}`;
 }
 
 /**
@@ -352,6 +377,7 @@ export function formatListCollections(response) {
  *   color?: unknown,
  *   icon?: unknown,
  *   itemCount?: unknown,
+ *   tags?: string[],
  * }} collection
  * @param {Array<{ title?: unknown, itemType?: unknown, itemId?: unknown }>} [items]
  * @returns {string}
@@ -364,33 +390,45 @@ export function formatGetCollection(collection, items) {
       .join("\n")}`;
   }
 
+  // Phase 5 — conditional Tags block keeps tagless output byte-identical.
+  const tagsBlock =
+    collection?.tags && collection.tags.length > 0
+      ? `\n**Tags:** ${collection.tags.join(", ")}`
+      : "";
+
   return (
     `# ${collection.icon || "📁"} ${collection.name}\n\n` +
     `**Description:** ${collection.description || "No description"}\n` +
     `**Items:** ${collection.itemCount || 0}\n` +
     `**Color:** ${collection.color || "Default"}` +
+    tagsBlock +
     itemsText
   );
 }
 
 /**
  * @param {{ id?: unknown, _id?: unknown }} collection
- * @param {{ name: string, icon?: string, color?: string }} args
+ * @param {{ name: string, icon?: string, color?: string, tags?: string[] }} args
  * @returns {string}
  */
 export function formatCreateCollection(collection, args) {
   const id = collection?._id ?? collection?.id;
   const iconLine = args.icon ? `\nIcon: ${args.icon}` : "";
   const colorLine = args.color ? `\nColor: ${args.color}` : "";
-  return `Successfully created collection "${args.name}"\n\nID: ${id}${iconLine}${colorLine}`;
+  const tagsSuffix =
+    args.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
+  return `Successfully created collection "${args.name}"\n\nID: ${id}${iconLine}${colorLine}${tagsSuffix}`;
 }
 
 /**
  * @param {{ name?: unknown }} collection
+ * @param {{ tags?: string[] }} [args]
  * @returns {string}
  */
-export function formatUpdateCollection(collection) {
-  return `Successfully updated collection "${collection.name}"`;
+export function formatUpdateCollection(collection, args) {
+  const tagsSuffix =
+    args?.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
+  return `Successfully updated collection "${collection.name}"${tagsSuffix}`;
 }
 
 /**

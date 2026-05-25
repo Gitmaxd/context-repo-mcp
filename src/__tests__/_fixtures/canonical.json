@@ -1126,6 +1126,327 @@
           "data": { "chunks": [] }
         }
       }
+    },
+    {
+      "tool": "read_prompt_with_tags",
+      "args": { "promptId": "prompt_aaa" },
+      "rest": {
+        "endpoint": "GET /v1/prompts/prompt_aaa",
+        "response": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "isPublic": false,
+            "currentVersion": 1,
+            "content": "Hello ${input}!",
+            "variables": [
+              { "name": "input", "description": "User input" }
+            ],
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Sample Prompt\n\n**Description:** A sample prompt.\n**Engine:** gpt-4\n**Version:** 1\n**Public:** No\n\n**Tags:** alpha, beta\n\n## Content\n\n```\nHello ${input}!\n```\n\n## Variables\n\n- `${input}` - User input",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "isPublic": false,
+            "currentVersion": 1,
+            "content": "Hello ${input}!",
+            "variables": [
+              { "name": "input", "description": "User input" }
+            ],
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "create_prompt_with_tags",
+      "args": {
+        "title": "New Prompt",
+        "description": "A new prompt.",
+        "content": "Hi there",
+        "engine": "gpt-4",
+        "tags": ["alpha", "beta"]
+      },
+      "rest": {
+        "endpoint": "POST /v1/prompts",
+        "response": {
+          "data": {
+            "id": "prompt_new",
+            "title": "New Prompt",
+            "description": "A new prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 1,
+            "isPublic": false,
+            "content": "Hi there",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created prompt \"New Prompt\"\n\nID: prompt_new\nEngine: gpt-4\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_new",
+            "title": "New Prompt",
+            "description": "A new prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 1,
+            "isPublic": false,
+            "content": "Hi there",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_prompt_with_tags",
+      "args": {
+        "promptId": "prompt_aaa",
+        "tags": ["alpha", "beta"]
+      },
+      "rest": {
+        "endpoint": "PATCH /v1/prompts/prompt_aaa",
+        "response": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 2,
+            "isPublic": false,
+            "content": "Hello again",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated prompt \"Sample Prompt\"\n\nVersion: 2\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "prompt_aaa",
+            "title": "Sample Prompt",
+            "description": "A sample prompt.",
+            "engine": "gpt-4",
+            "currentVersion": 2,
+            "isPublic": false,
+            "content": "Hello again",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "get_document_with_tags",
+      "args": { "documentId": "doc_bbb" },
+      "rest": {
+        "endpoint": "GET /v1/documents/doc_bbb",
+        "response": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "sourceType": "text",
+            "content": "Document body text.",
+            "tags": ["docTag1", "docTag2"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Sample Document\n\n**Status:** ready\n**Source:** text\n**Created:** Unknown\n\n**Tags:** docTag1, docTag2\n\n## Content\n\nDocument body text.",
+        "structuredContent": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "sourceType": "text",
+            "content": "Document body text.",
+            "tags": ["docTag1", "docTag2"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "create_document_with_tags",
+      "args": {
+        "title": "New Document",
+        "content": "Doc body",
+        "tags": ["alpha", "beta"]
+      },
+      "rest": {
+        "endpoint": "POST /v1/documents",
+        "response": {
+          "data": {
+            "id": "doc_new",
+            "title": "New Document",
+            "status": "pending",
+            "content": "Doc body",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created document \"New Document\"\n\nID: doc_new\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "doc_new",
+            "title": "New Document",
+            "status": "pending",
+            "content": "Doc body",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_document_with_tags",
+      "args": {
+        "documentId": "doc_bbb",
+        "tags": ["alpha", "beta"]
+      },
+      "rest": {
+        "endpoint": "PATCH /v1/documents/doc_bbb",
+        "response": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "currentVersion": 2,
+            "content": "Updated body",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated document \"Sample Document\"\n\nVersion: 2\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "doc_bbb",
+            "title": "Sample Document",
+            "status": "ready",
+            "currentVersion": 2,
+            "content": "Updated body",
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "get_collection_with_tags",
+      "args": { "collectionId": "col_ccc" },
+      "rest": {
+        "endpoint": "GET /v1/collections/col_ccc (then GET /v1/collections/col_ccc/items?limit=50)",
+        "response": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2,
+            "tags": ["colTag1", "colTag2"]
+          }
+        },
+        "itemsResponse": {
+          "data": [
+            { "title": "Sample Prompt", "itemType": "prompt", "itemId": "prompt_aaa" },
+            { "title": "Sample Document", "itemType": "document", "itemId": "doc_bbb" }
+          ]
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# \ud83d\udcc1 Sample Collection\n\n**Description:** A sample collection.\n**Items:** 2\n**Color:** #f97316\n**Tags:** colTag1, colTag2\n\n## Items (2)\n\n- **Sample Prompt** (prompt)\n  ID: prompt_aaa\n- **Sample Document** (document)\n  ID: doc_bbb",
+        "structuredContent": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Sample Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2,
+            "tags": ["colTag1", "colTag2"]
+          },
+          "items": [
+            { "title": "Sample Prompt", "itemType": "prompt", "itemId": "prompt_aaa" },
+            { "title": "Sample Document", "itemType": "document", "itemId": "doc_bbb" }
+          ]
+        }
+      }
+    },
+    {
+      "tool": "create_collection_with_tags",
+      "args": { "name": "New Collection", "tags": ["alpha", "beta"] },
+      "rest": {
+        "endpoint": "POST /v1/collections",
+        "response": {
+          "data": {
+            "id": "col_new",
+            "name": "New Collection",
+            "itemCount": 0,
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully created collection \"New Collection\"\n\nID: col_new\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "col_new",
+            "name": "New Collection",
+            "itemCount": 0,
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "update_collection_with_tags",
+      "args": { "collectionId": "col_ccc", "tags": ["alpha", "beta"] },
+      "rest": {
+        "endpoint": "PATCH /v1/collections/col_ccc",
+        "response": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Updated Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2,
+            "tags": ["alpha", "beta"]
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "Successfully updated collection \"Updated Collection\"\nTags: alpha, beta",
+        "structuredContent": {
+          "data": {
+            "id": "col_ccc",
+            "name": "Updated Collection",
+            "description": "A sample collection.",
+            "color": "#f97316",
+            "icon": "\ud83d\udcc1",
+            "itemCount": 2,
+            "tags": ["alpha", "beta"]
+          }
+        }
+      }
     }
   ]
 }
