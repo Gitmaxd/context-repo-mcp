@@ -741,6 +741,7 @@ export function formatReason(data) {
   const citations = Array.isArray(data.citations) ? data.citations : [];
   const gaps = Array.isArray(data.gaps) ? data.gaps : [];
   const conflicts = Array.isArray(data.conflicts) ? data.conflicts : [];
+  const meta = data.meta;
 
   const sections = [`# Answer\n\n${answer}`];
 
@@ -758,6 +759,21 @@ export function formatReason(data) {
 
   if (conflicts.length > 0) {
     sections.push(`## Conflicts\n${conflicts.map((c) => `- ${c}`).join("\n")}`);
+  }
+
+  if (meta && typeof meta === "object") {
+    const chunksGathered =
+      typeof meta.chunksGathered === "number" ? meta.chunksGathered : "";
+    const citationsDropped =
+      typeof meta.citationsDropped === "number" ? meta.citationsDropped : "";
+    const latencyMs =
+      typeof meta.latencyMs === "number" ? meta.latencyMs : "";
+    const model = typeof meta.model === "string" ? meta.model : "";
+    if (chunksGathered !== "" || citationsDropped !== "" || latencyMs !== "" || model !== "") {
+      sections.push(
+        `## Meta\n- Chunks gathered: ${chunksGathered}\n- Citations dropped: ${citationsDropped}\n- Latency: ${latencyMs}ms\n- Model: ${model}`,
+      );
+    }
   }
 
   return sections.join("\n\n");

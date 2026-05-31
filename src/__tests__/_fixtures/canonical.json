@@ -1468,7 +1468,7 @@
       },
       "expected": {
         "isError": false,
-        "text": "# Answer\n\nSecurity training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].\n\n## Sources\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_ddd, score: 0.91)\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_eee, score: 0.83)\n\n## Gaps\n- The documents do not specify who delivers the training.\n\n## Conflicts\n- chunk_ddd says equipment is provided; chunk_eee says it must be requested.",
+        "text": "# Answer\n\nSecurity training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].\n\n## Sources\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_ddd, score: 0.91)\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_eee, score: 0.83)\n\n## Gaps\n- The documents do not specify who delivers the training.\n\n## Conflicts\n- chunk_ddd says equipment is provided; chunk_eee says it must be requested.\n\n## Meta\n- Chunks gathered: 2\n- Citations dropped: 0\n- Latency: 42ms\n- Model: gpt-4o-mini",
         "structuredContent": {
           "data": {
             "answer": "Security training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].",
@@ -1500,7 +1500,7 @@
       },
       "expected": {
         "isError": false,
-        "text": "# Answer\n\n\n\n## Gaps\n- Your repository has no content matching this question.",
+        "text": "# Answer\n\n\n\n## Gaps\n- Your repository has no content matching this question.\n\n## Meta\n- Chunks gathered: 0\n- Citations dropped: 0\n- Latency: 5ms\n- Model: gpt-4o-mini",
         "structuredContent": {
           "data": {
             "answer": "",
