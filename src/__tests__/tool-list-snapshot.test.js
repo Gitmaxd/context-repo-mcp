@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Snapshot test for the 26-tool MCP contract (R-11 in the audit
+// Snapshot test for the 27-tool MCP contract (R-11 in the audit
 // remediation plan). The existing backward-compat test asserts the
 // COUNT and the PRESENCE of each name, but does not pin order. A
-// typo or a duplicate that still leaves count = 26 would slip
+// typo or a duplicate that still leaves count = 27 would slip
 // through. This test pins the exact ordered list.
 
 let registeredHandlers = {};
@@ -51,8 +51,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('tools/list — exact 26-tool contract pinned (R-11)', () => {
-  it('returns the canonical 26 tool names in the documented order', async () => {
+describe('tools/list — exact 27-tool contract pinned (R-11)', () => {
+  it('returns the canonical 27 tool names in the documented order', async () => {
     const result = await listToolsHandler({});
     const names = result.tools.map((t) => t.name);
 
@@ -89,6 +89,8 @@ describe('tools/list — exact 26-tool contract pinned (R-11)', () => {
       'deep_search',
       'deep_read',
       'deep_expand',
+      // Reasoning (1)
+      'reason',
     ]);
   });
 
@@ -111,7 +113,7 @@ describe('tools/list — exact 26-tool contract pinned (R-11)', () => {
     const unique = new Set(names);
 
     expect(unique.size).toBe(names.length);
-    expect(unique.size).toBe(26);
+    expect(unique.size).toBe(27);
   });
 
   it('every tool with a "required" array references properties that exist on the schema', async () => {

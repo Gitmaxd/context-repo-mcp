@@ -257,6 +257,12 @@ Once connected, your MCP client can use these tools:
 | `deep_read` | Retrieve a single chunk with full content, hierarchy metadata, and navigation IDs |
 | `deep_expand` | Navigate the document hierarchy in 5 directions (up, down, next, previous, surrounding) |
 
+### Reasoning (1 tool)
+
+| Tool | Description |
+|------|-------------|
+| `reason` | Ask a question and get a synthesized, cited answer composed across your documents — with inline citations, an explicit gaps list, and any conflicts between sources (read-only) |
+
 ## Semantic Search
 
 The `find_items` tool enables natural language search across your entire Context Repo. Instead of requiring exact keyword matches, it understands the meaning of your query.

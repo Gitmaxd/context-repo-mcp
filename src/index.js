@@ -52,6 +52,7 @@ import {
   formatDeepRead,
   formatDeepExpand,
   formatDeepExpandEmpty,
+  formatReason,
 } from "./_format.js";
 
 // =============================================================================
@@ -832,6 +833,41 @@ const TOOLS = [
       required: ["chunkId", "direction"],
     },
   },
+  {
+    name: "reason",
+    description:
+      "Ask a question and get a synthesized, cited answer composed across your documents — not a list of chunks. " +
+      "Returns the answer with inline citations to the exact chunks used, an explicit list of gaps (what your " +
+      "repository does NOT contain about this question), and any conflicts between sources. Operates on document " +
+      "content only (not prompts); read-only; does not persist.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The natural-language question to answer over your document content",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of chunks to gather as evidence (server default: 8, max: 50)",
+        },
+        documentId: {
+          type: "string",
+          description: "Restrict synthesis to a single document",
+        },
+        collectionId: {
+          type: "string",
+          description: "Restrict synthesis to documents in a single collection",
+        },
+        model: {
+          type: "string",
+          enum: ["gpt-4o-mini", "gpt-4o"],
+          description: "Synthesis model (default: gpt-4o-mini)",
+        },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
 // =============================================================================
@@ -1404,6 +1440,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "reason": {
+        const reasonBody = { query: args.query };
+        if (args.limit !== undefined) reasonBody.limit = args.limit;
+        if (args.documentId) reasonBody.documentId = args.documentId;
+        if (args.collectionId) reasonBody.collectionId = args.collectionId;
+        if (args.model) reasonBody.model = args.model;
+
+        const reasonResult = await apiRequest("POST", "/v1/reason", reasonBody);
+        return {
+          content: [{ type: "text", text: formatReason(reasonResult.data) }],
+          structuredContent: reasonResult,
+        };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -1457,7 +1507,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v2.1.0                   ║");
+  console.error("║              Context Repo MCP Server v2.2.0                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
