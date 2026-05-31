@@ -69,7 +69,7 @@ Use these tool families for the corresponding intents:
   `surrounding` directions).
 - **Account info** — `get_user_info`.
 
-## Tool inventory (28 tools, snake_case)
+## Tool inventory (29 tools, snake_case)
 
 | Category | Tools |
 |---|---|
@@ -78,6 +78,7 @@ Use these tool families for the corresponding intents:
 | Documents | `list_documents`, `get_document`, `create_document`, `update_document`, `delete_document`, `get_document_versions`, `restore_document_version` |
 | Collections | `list_collections`, `get_collection`, `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, `remove_from_collection` |
 | Cross-search | `find_items`, `deep_search`, `deep_read`, `deep_expand` |
+| Reasoning | `reason` |
 | OpenAI Apps SDK | `search`, `fetch` |
 
 Read-only tools are annotated with `readOnlyHint: true` so safe-mode

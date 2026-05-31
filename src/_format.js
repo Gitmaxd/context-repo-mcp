@@ -725,3 +725,40 @@ export function formatDeepExpandEmpty() {
     "may have been rebuilt while the document was being indexed."
   );
 }
+
+/**
+ * Render a `reason` response as markdown: a synthesized answer followed by a
+ * Sources block, a Gaps block, and (only when non-empty) a Conflicts block.
+ * Byte-for-byte mirror of the web server's formatReason
+ * (app/[transport]/_response-formatters.ts); the shared canonical fixture
+ * enforces equality across both surfaces.
+ *
+ * @param {object} data - the `data` object from the /v1/reason response.
+ * @returns {string}
+ */
+export function formatReason(data) {
+  const answer = typeof data.answer === "string" ? data.answer : "";
+  const citations = Array.isArray(data.citations) ? data.citations : [];
+  const gaps = Array.isArray(data.gaps) ? data.gaps : [];
+  const conflicts = Array.isArray(data.conflicts) ? data.conflicts : [];
+
+  const sections = [`# Answer\n\n${answer}`];
+
+  if (citations.length > 0) {
+    const lines = citations.map((c) => {
+      const score = typeof c.score === "number" ? c.score.toFixed(2) : c.score;
+      return `- ${c.documentTitle} (doc: ${c.documentId}, chunk: ${c.chunkId}, score: ${score})`;
+    });
+    sections.push(`## Sources\n${lines.join("\n")}`);
+  }
+
+  if (gaps.length > 0) {
+    sections.push(`## Gaps\n${gaps.map((g) => `- ${g}`).join("\n")}`);
+  }
+
+  if (conflicts.length > 0) {
+    sections.push(`## Conflicts\n${conflicts.map((c) => `- ${c}`).join("\n")}`);
+  }
+
+  return sections.join("\n\n");
+}

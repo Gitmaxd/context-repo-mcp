@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "purpose": "Canonical MCP response shape -- single source of truth for both /mcp web and context-repo-mcp npm",
     "generatedAt": "2026-04-30",
-    "toolCount": 28,
+    "toolCount": 29,
     "exempt": ["search", "fetch"],
     "notes": [
       "All `text` strings are lifted verbatim from app/[transport]/route.ts. Action tools follow the web 'Successfully X' pattern (npm '\u2713 X' wording is migrated in Phase 3).",
@@ -1444,6 +1444,70 @@
             "icon": "\ud83d\udcc1",
             "itemCount": 2,
             "tags": ["alpha", "beta"]
+          }
+        }
+      }
+    },
+    {
+      "tool": "reason",
+      "args": { "query": "When does security training happen?" },
+      "rest": {
+        "endpoint": "POST /v1/reason",
+        "response": {
+          "data": {
+            "answer": "Security training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].",
+            "citations": [
+              { "chunkId": "chunk_ddd", "documentId": "doc_bbb", "documentTitle": "Onboarding Guide", "score": 0.91 },
+              { "chunkId": "chunk_eee", "documentId": "doc_bbb", "documentTitle": "Onboarding Guide", "score": 0.83 }
+            ],
+            "gaps": ["The documents do not specify who delivers the training."],
+            "conflicts": ["chunk_ddd says equipment is provided; chunk_eee says it must be requested."],
+            "meta": { "chunksGathered": 2, "citationsDropped": 0, "model": "gpt-4o-mini", "latencyMs": 42 }
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Answer\n\nSecurity training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].\n\n## Sources\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_ddd, score: 0.91)\n- Onboarding Guide (doc: doc_bbb, chunk: chunk_eee, score: 0.83)\n\n## Gaps\n- The documents do not specify who delivers the training.\n\n## Conflicts\n- chunk_ddd says equipment is provided; chunk_eee says it must be requested.",
+        "structuredContent": {
+          "data": {
+            "answer": "Security training happens in week one [[chunk_ddd]]. Sources disagree on equipment policy [[chunk_eee]].",
+            "citations": [
+              { "chunkId": "chunk_ddd", "documentId": "doc_bbb", "documentTitle": "Onboarding Guide", "score": 0.91 },
+              { "chunkId": "chunk_eee", "documentId": "doc_bbb", "documentTitle": "Onboarding Guide", "score": 0.83 }
+            ],
+            "gaps": ["The documents do not specify who delivers the training."],
+            "conflicts": ["chunk_ddd says equipment is provided; chunk_eee says it must be requested."],
+            "meta": { "chunksGathered": 2, "citationsDropped": 0, "model": "gpt-4o-mini", "latencyMs": 42 }
+          }
+        }
+      }
+    },
+    {
+      "tool": "reason_empty",
+      "args": { "query": "Do we have a parental leave policy?" },
+      "rest": {
+        "endpoint": "POST /v1/reason",
+        "response": {
+          "data": {
+            "answer": "",
+            "citations": [],
+            "gaps": ["Your repository has no content matching this question."],
+            "conflicts": [],
+            "meta": { "chunksGathered": 0, "citationsDropped": 0, "model": "gpt-4o-mini", "latencyMs": 5 }
+          }
+        }
+      },
+      "expected": {
+        "isError": false,
+        "text": "# Answer\n\n\n\n## Gaps\n- Your repository has no content matching this question.",
+        "structuredContent": {
+          "data": {
+            "answer": "",
+            "citations": [],
+            "gaps": ["Your repository has no content matching this question."],
+            "conflicts": [],
+            "meta": { "chunksGathered": 0, "citationsDropped": 0, "model": "gpt-4o-mini", "latencyMs": 5 }
           }
         }
       }

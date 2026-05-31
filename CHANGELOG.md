@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-31
+
+### Versioning note
+- **MINOR** bump per SemVer: adds one net-new, read-only tool (`reason`) to the surface. Strictly backwards-compatible — every existing call shape is unchanged and the 28 pre-existing fixtures remain byte-identical.
+
+### Added
+- **`reason` tool — synthesized, cited answers over your documents.** Ask a natural-language question and get a single composed answer (not a list of chunks) with inline `[[chunkId]]` citations to the exact evidence used, an explicit `## Gaps` list of what your repository does NOT contain about the question, and any `## Conflicts` between sources. Read-only; operates on document content only (not prompts); does not persist. The tool proxies `POST /v1/reason` on the Convex backend, where GATHER (progressive-disclosure search) → SYNTHESIZE (one LLM call) → server-side citation validation runs; invented citations are dropped before the response is returned. Mirrors the hosted `contextrepo.com/mcp` server byte-for-byte via the shared canonical fixture.
+- **New formatter `formatReason(data)` in `_format.js`** — renders `# Answer` / `## Sources` / `## Gaps` / `## Conflicts`, omitting any section whose source array is empty. Byte-identical to the web server's `formatReason`.
+- **Two new canonical fixtures** (`reason`, `reason_empty`) synced from the web repo via `scripts/sync-mcp-fixture.sh` and locked by the SHA-256 drift guard.
+- **New test suite `src/__tests__/reason.test.js`** — schema registration, formatter byte-identity against both fixtures, the conflicts-omitted case, request-body construction (optional `limit`/`documentId`/`collectionId`/`model` forwarding), and error paths (401 friendly, 403 friendly, 5xx redacted).
+
+### Changed
+- **Tool inventory is now 27 registered tools** (was 26). `tool-list-snapshot.test.js` and `backward-compat.test.js` updated to expect 27 with `reason` ordered after `deep_expand`; `mcp-response-contract.test.js` gains the `reason`/`reason_empty` dispatcher branches and the `reason` source-shape entry.
+- **Tool inventories in `AGENTS.md`, `SKILL.md`, and `README.md`** updated to document the new `reason` tool.
+- **Internal version banner bumped from "v2.1.0" to "v2.2.0".**
+
+### Notes
+- **Strictly additive, no breaking changes.** The `reason` tool is net-new; no existing tool changed shape.
+- Cross-surface alignment: the web `/mcp` + Convex `/v1/reason` ship lives at https://github.com/Gitmaxd/gitmaxd-prompts/pull/220 (PR-W, merged 2026-05-31). This release is PR-N of the same Phase-0 reason spike.
+
 ## [2.1.0] - 2026-05-25
 
 ### Versioning note

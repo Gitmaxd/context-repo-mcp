@@ -82,7 +82,7 @@ Two equivalent auth modes:
   `https://contextrepo.com/.well-known/oauth-protected-resource/mcp`
   (RFC 9728).
 
-## Tool inventory (28 tools)
+## Tool inventory (29 tools)
 
 All tool names use snake_case. The `tools/list` JSON-RPC method is
 publicly callable without auth at
@@ -112,6 +112,10 @@ authenticating. `tools/call` requires auth.
 - `deep_search` - chunk-level vector search inside documents.
 - `deep_read` - retrieve a single document chunk by ID.
 - `deep_expand` - navigate up/down/next/previous from a chunk.
+
+### Reasoning
+- `reason` - synthesized, cited answer composed across document
+  content, with explicit gaps and conflicts (read-only).
 
 ### OpenAI Apps SDK Company-Knowledge pair
 - `search`, `fetch`

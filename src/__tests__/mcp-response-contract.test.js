@@ -11,7 +11,7 @@
  *      pure formatter in `../_format.js` and asserts the resulting Markdown
  *      string equals `expected.text` byte-for-byte.
  *
- *   2. Source-shape regression. Each of the 26 npm tools registered in
+ *   2. Source-shape regression. Each of the 27 npm tools registered in
  *      `src/index.js` must include `structuredContent:` in its return so
  *      the stdio handler emits typed JSON alongside `text`. The check is
  *      done via a per-tool slice + regex scan, mirroring the web suite.
@@ -65,6 +65,7 @@ import {
   formatDeepRead,
   formatDeepExpand,
   formatDeepExpandEmpty,
+  formatReason,
 } from "../_format.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -183,6 +184,9 @@ function formatFixture(fixture) {
     }
     case "deep_expand_empty":
       return formatDeepExpandEmpty();
+    case "reason":
+    case "reason_empty":
+      return formatReason(data);
     default:
       throw new Error(`Unknown fixture tool: "${fixture.tool}"`);
   }
@@ -228,6 +232,8 @@ describe("MCP response contract -- formatter byte-identity (npm CLI)", () => {
       "deep_read",
       "deep_expand",
       "deep_expand_empty",
+      "reason",
+      "reason_empty",
     ]) {
       expect(tools).toContain(expected);
     }
@@ -284,6 +290,7 @@ const TOOLS_WITH_STRUCTURED_CONTENT = [
   "deep_search",
   "deep_read",
   "deep_expand",
+  "reason",
 ];
 
 describe("MCP response contract -- source-shape (index.js) regression", () => {
