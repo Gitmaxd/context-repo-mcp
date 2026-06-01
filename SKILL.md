@@ -16,7 +16,7 @@ description: >
   trigger when the user wants to navigate large documents
   hierarchically (deep_search -> deep_read -> deep_expand) or perform
   semantic search across their stored knowledge base.
-version: 2.0.0
+version: 2.2.1
 license: MIT
 homepage: https://contextrepo.com
 repository: https://github.com/Gitmaxd/context-repo-mcp
@@ -42,7 +42,7 @@ tags:
 # context-repo-mcp
 
 Connect to a [Context Repo](https://contextrepo.com) account and act
-on the user's saved prompts, documents, and collections through 28
+on the user's saved prompts, documents, and collections through 27
 MCP tools. The Context Repo platform stores reusable prompt
 templates with version history, markdown documents with hierarchical
 search, and collection-based organization — this skill is the
@@ -67,9 +67,11 @@ Use these tool families for the corresponding intents:
   -> `deep_expand` (vector-backed chunk retrieval with parent /
   sibling navigation across `up`, `down`, `next`, `previous`,
   `surrounding` directions).
+- **Reasoning** — `reason` (synthesized, cited answer composed across
+  document content, with explicit gaps and conflicts; read-only).
 - **Account info** — `get_user_info`.
 
-## Tool inventory (29 tools, snake_case)
+## Tool inventory (27 tools, snake_case)
 
 | Category | Tools |
 |---|---|
@@ -79,7 +81,10 @@ Use these tool families for the corresponding intents:
 | Collections | `list_collections`, `get_collection`, `create_collection`, `update_collection`, `delete_collection`, `add_to_collection`, `remove_from_collection` |
 | Cross-search | `find_items`, `deep_search`, `deep_read`, `deep_expand` |
 | Reasoning | `reason` |
-| OpenAI Apps SDK | `search`, `fetch` |
+
+The hosted web MCP at `https://contextrepo.com/mcp` additionally
+exposes the OpenAI Apps SDK aliases `search` and `fetch` (29 tools
+there); this npm / stdio package ships the 27 tools above.
 
 Read-only tools are annotated with `readOnlyHint: true` so safe-mode
 agents can execute them without write confirmation.

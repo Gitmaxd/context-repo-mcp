@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- Corrected the documented tool count to **27** in `SKILL.md` and `AGENTS.md` (both previously said 29) to match the shipped `tools/list` contract pinned by `tool-list-snapshot.test.js`.
+- Removed the OpenAI Apps SDK `search`/`fetch` pair from the npm-package tool inventories — those aliases exist only on the hosted web MCP (`contextrepo.com/mcp`), not in this stdio package; added a clarifying note in both files.
+- Added the missing `get_user_info` tool to the `README.md` inventory (now documents all 27 tools).
+- Bumped `SKILL.md` frontmatter `version` to 2.2.1 to reflect the shipped `reason` capability.
+
 ## [2.2.0] - 2026-05-31
 
 ### Versioning note
