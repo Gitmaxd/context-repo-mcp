@@ -859,11 +859,6 @@ const TOOLS = [
           type: "string",
           description: "Restrict synthesis to documents in a single collection",
         },
-        model: {
-          type: "string",
-          enum: ["gpt-4o-mini", "gpt-4o"],
-          description: "Synthesis model (default: gpt-4o-mini)",
-        },
       },
       required: ["query"],
     },
@@ -1445,7 +1440,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.limit !== undefined) reasonBody.limit = args.limit;
         if (args.documentId) reasonBody.documentId = args.documentId;
         if (args.collectionId) reasonBody.collectionId = args.collectionId;
-        if (args.model) reasonBody.model = args.model;
 
         const reasonResult = await apiRequest("POST", "/v1/reason", reasonBody);
         return {
@@ -1507,7 +1501,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 async function main() {
   console.error("╔════════════════════════════════════════════════════════════════╗");
-  console.error("║              Context Repo MCP Server v2.2.0                   ║");
+  console.error("║              Context Repo MCP Server v2.2.2                   ║");
   console.error("╚════════════════════════════════════════════════════════════════╝");
   console.error(`[Config] API: ${API_BASE_URL}`);
   console.error(`[Config] Key: ${API_KEY.startsWith("gm_") ? "✓ Valid format (gm_***)" : "⚠ Invalid format"}`);
