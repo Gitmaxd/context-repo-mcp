@@ -859,11 +859,6 @@ const TOOLS = [
           type: "string",
           description: "Restrict synthesis to documents in a single collection",
         },
-        model: {
-          type: "string",
-          enum: ["gpt-4o-mini", "gpt-4o"],
-          description: "Synthesis model (default: gpt-4o-mini)",
-        },
       },
       required: ["query"],
     },
@@ -1445,7 +1440,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.limit !== undefined) reasonBody.limit = args.limit;
         if (args.documentId) reasonBody.documentId = args.documentId;
         if (args.collectionId) reasonBody.collectionId = args.collectionId;
-        if (args.model) reasonBody.model = args.model;
 
         const reasonResult = await apiRequest("POST", "/v1/reason", reasonBody);
         return {

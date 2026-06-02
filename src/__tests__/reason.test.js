@@ -110,17 +110,14 @@ function setupFetch(...responses) {
 }
 
 describe('reason tool schema', () => {
-  it('is registered with required query and the model enum', async () => {
+  it('is registered with required query and no model selector', async () => {
     const result = await listToolsHandler({});
     const reason = result.tools.find((t) => t.name === 'reason');
 
     expect(reason).toBeDefined();
     expect(reason.inputSchema.type).toBe('object');
     expect(reason.inputSchema.required).toEqual(['query']);
-    expect(reason.inputSchema.properties.model.enum).toEqual([
-      'gpt-4o-mini',
-      'gpt-4o',
-    ]);
+    expect('model' in reason.inputSchema.properties).toBe(false);
     expect(reason.description.length).toBeGreaterThan(0);
   });
 });
@@ -163,7 +160,7 @@ describe('reason tool — formatter byte-identity (canonical fixture)', () => {
         ],
         gaps: [],
         conflicts: [],
-        meta: { chunksGathered: 1, citationsDropped: 0, model: 'gpt-4o-mini', latencyMs: 12 },
+        meta: { chunksGathered: 1, citationsDropped: 0, latencyMs: 12 },
       },
     };
     setupFetch(mockFetchResponse(200, response));
@@ -177,7 +174,7 @@ describe('reason tool — formatter byte-identity (canonical fixture)', () => {
 });
 
 describe('reason tool — request body', () => {
-  it('POSTs to /v1/reason and forwards optional scope + model fields', async () => {
+  it('POSTs to /v1/reason and forwards optional scope fields', async () => {
     setupFetch(mockFetchResponse(200, fixture('reason').rest.response));
 
     await callTool('reason', {
@@ -185,7 +182,6 @@ describe('reason tool — request body', () => {
       limit: 5,
       documentId: 'doc_1',
       collectionId: 'col_1',
-      model: 'gpt-4o',
     });
 
     expect(fetchCalls).toHaveLength(1);
@@ -196,7 +192,6 @@ describe('reason tool — request body', () => {
       limit: 5,
       documentId: 'doc_1',
       collectionId: 'col_1',
-      model: 'gpt-4o',
     });
   });
 

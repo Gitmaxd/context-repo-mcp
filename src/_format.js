@@ -768,10 +768,9 @@ export function formatReason(data) {
       typeof meta.citationsDropped === "number" ? meta.citationsDropped : "";
     const latencyMs =
       typeof meta.latencyMs === "number" ? meta.latencyMs : "";
-    const model = typeof meta.model === "string" ? meta.model : "";
-    if (chunksGathered !== "" || citationsDropped !== "" || latencyMs !== "" || model !== "") {
+    if (chunksGathered !== "" || citationsDropped !== "" || latencyMs !== "") {
       sections.push(
-        `## Meta\n- Chunks gathered: ${chunksGathered}\n- Citations dropped: ${citationsDropped}\n- Latency: ${latencyMs}ms\n- Model: ${model}`,
+        `## Meta\n- Chunks gathered: ${chunksGathered}\n- Citations dropped: ${citationsDropped}\n- Latency: ${latencyMs}ms`,
       );
     }
   }
