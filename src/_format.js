@@ -71,7 +71,7 @@ export function formatSearchPrompts(response) {
       ? `Found ${prompts.length} prompts:\n\n${prompts
           .map(
             (p) =>
-              `- **${p.title}** (v${p.currentVersion})\n  ${p.description}\n  Engine: ${p.engine} | ID: ${p.id}`,
+              `- **${p.title}** (v${p.currentVersion})\n  ${p.description}\n  ID: ${p.id}`,
           )
           .join("\n\n")}`
       : "No prompts found.";
@@ -87,7 +87,6 @@ export function formatSearchPrompts(response) {
  *   id?: unknown,
  *   title?: unknown,
  *   description?: unknown,
- *   engine?: unknown,
  *   isPublic?: unknown,
  *   currentVersion?: unknown,
  *   content?: unknown,
@@ -114,7 +113,6 @@ export function formatReadPrompt(prompt) {
   return (
     `# ${prompt.title}\n\n` +
     `**Description:** ${prompt.description}\n` +
-    `**Engine:** ${prompt.engine}\n` +
     `**Version:** ${prompt.currentVersion}\n` +
     `**Public:** ${prompt.isPublic ? "Yes" : "No"}\n\n` +
     tagsLine +
@@ -127,14 +125,14 @@ export function formatReadPrompt(prompt) {
 }
 
 /**
- * @param {{ title?: unknown, id?: unknown, engine?: unknown }} prompt
+ * @param {{ title?: unknown, id?: unknown }} prompt
  * @param {{ tags?: string[] }} [args]
  * @returns {string}
  */
 export function formatCreatePrompt(prompt, args) {
   const tagsSuffix =
     args?.tags && args.tags.length > 0 ? `\nTags: ${args.tags.join(", ")}` : "";
-  return `Successfully created prompt "${prompt.title}"\n\nID: ${prompt.id}\nEngine: ${prompt.engine}${tagsSuffix}`;
+  return `Successfully created prompt "${prompt.title}"\n\nID: ${prompt.id}${tagsSuffix}`;
 }
 
 /**
