@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-06-02
+
+### Versioning note
+- **PATCH** bump per SemVer. Output-contract cleanup only — drops two stale, now-`undefined` lines to match the web `/mcp` server and the Convex backend, which no longer return `model` or `engine`. No tool gains or changes its call shape for valid callers.
+
+### Changed
+- **`reason` no longer exposes a caller-facing `model` selector.** Removed the `model` property from the `reason` inputSchema, stopped forwarding it in the POST body, and dropped the `- Model:` line from `formatReason`. The synthesis model is a server-side implementation detail (lockstep with web repo `12c605f`). The canonical `reason`/`reason_empty` fixtures were re-synced (no `meta.model`).
+
+### Fixed
+- **Prompt formatters no longer emit a stale `Engine:` line.** `formatSearchPrompts`, `formatReadPrompt`, and `formatCreatePrompt` rendered `Engine: undefined` after the backend removed the `engine` field from prompts. Dropped the line to restore byte-identity with the regenerated canonical fixtures (5 contract tests were failing; now green).
+
 ### Documentation
 - Corrected the documented tool count to **27** in `SKILL.md` and `AGENTS.md` (both previously said 29) to match the shipped `tools/list` contract pinned by `tool-list-snapshot.test.js`.
 - Removed the OpenAI Apps SDK `search`/`fetch` pair from the npm-package tool inventories — those aliases exist only on the hosted web MCP (`contextrepo.com/mcp`), not in this stdio package; added a clarifying note in both files.
 - Added the missing `get_user_info` tool to the `README.md` inventory (now documents all 27 tools).
-- Bumped `SKILL.md` frontmatter `version` to 2.2.1 to reflect the shipped `reason` capability.
 
 ## [2.2.0] - 2026-05-31
 
