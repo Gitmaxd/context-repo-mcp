@@ -468,10 +468,12 @@ export function formatRemoveFromCollection(result, itemType) {
 // ---------------------------------------------------------------------------
 
 /**
- * Mirrors the web's `find-items-formatter.ts` byte-for-byte. The wire shape
- * is unchanged from earlier npm versions; this implementation just re-routes
- * through the canonical formatter so cross-surface drift is caught at test
- * time.
+ * Mirrors the web's `find-items-formatter.ts` byte-for-byte, including the
+ * full-body literal-search additions (web PR #249): document rows render an
+ * optional `highlight` snippet (newline-flattened quote line) and a
+ * `chunkId` token when the literal match came from a body chunk. Rendering
+ * is conditional on field presence, so responses without the new fields are
+ * byte-identical to earlier npm versions and the canonical fixtures.
  *
  * @param {{
  *   query: string,
@@ -514,10 +516,22 @@ export function formatFindItems(input) {
       `### Documents (${documents.length})\n${documents
         .map((d) => {
           const id = String(d.documentId ?? "");
+          // Chunk-derived literal hits carry a `chunkId` an agent can feed
+          // to deep_read / deep_expand, and a `highlight` snippet around
+          // the literal match — rendered as an indented quote line.
+          // Snippets can span lines (tables, lists); flatten newlines so
+          // the quote stays a single well-formed markdown line.
+          // (Lockstep with web find-items-formatter.ts, PR #249.)
+          const idToken = d.chunkId
+            ? `${id}, chunkId: ${String(d.chunkId)}`
+            : id;
+          const snippet = d.highlight
+            ? `\n  > ${String(d.highlight).replace(/\s*\n\s*/g, " ")}`
+            : "";
           if (useSemantic) {
-            return `- **${d.title}** (id: ${id}, score: ${Number(d.score).toFixed(2)})`;
+            return `- **${d.title}** (id: ${idToken}, score: ${Number(d.score).toFixed(2)})${snippet}`;
           }
-          return `- **${d.title}** (id: ${id})${d.status ? ` (${d.status})` : ""}`;
+          return `- **${d.title}** (id: ${idToken})${d.status ? ` (${d.status})` : ""}${snippet}`;
         })
         .join("\n")}`,
     );
