@@ -709,8 +709,9 @@ const TOOLS = [
       "Use this to locate items by topic, find what exists in your workspace, or narrow down to a " +
       "specific prompt/document/collection before operating on it. Supports filtering by type " +
       "(prompts, documents, collections) and toggling between semantic (default) and literal matching " +
-      "modes. Literal mode (semantic=false) searches titles, descriptions, and the first ~4 KiB of " +
-      "document content; for full body-text passage search inside documents, use deep_search. " +
+      "modes. Literal mode (semantic=false) searches titles, descriptions, and indexed document body text " +
+      "via hierarchical chunks — full-body literal matching, eventually consistent with chunking; " +
+      "for passage-level retrieval inside documents, use deep_search. " +
       "find_items is the only tool that surfaces prompts in semantic results — deep_search operates on document chunks only.",
     inputSchema: {
       type: "object",

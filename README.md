@@ -290,6 +290,10 @@ Semantic search uses AI embeddings to understand the meaning behind your query:
 | `type` | string | No | `"all"` | Filter: `"prompts"`, `"documents"`, `"collections"`, or `"all"` |
 | `semantic` | boolean | No | `true` | Use semantic search. Set `false` for literal matching |
 
+### Literal Mode Coverage
+
+With `semantic: false`, literal matching covers titles, descriptions, and **indexed document body text** via the same hierarchical chunks that power `deep_search` (full-body matching, eventually consistent with chunking — title and preview matches are immediate). Document hits matched in the body include a `highlight` snippet around the exact match and a `chunkId` you can pass directly to `deep_read` or `deep_expand` to keep reading from that spot.
+
 ### Relevance Scoring
 
 Results are filtered by relevance score (0.0 to 1.0):

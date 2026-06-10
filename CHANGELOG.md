@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-06-09
+
+### Versioning note
+- **PATCH** bump per SemVer. Output-contract and description alignment with the web `/mcp` server's full-body literal search (web repo PR #249, deployed 2026-06-09). No tool gains or changes its call shape; new output renders only when the backend supplies the new fields, so all 44 canonical fixtures remain byte-identical.
+
+### Changed
+- **`find_items` literal-mode description corrected.** Literal mode (`semantic=false`) now searches titles, descriptions, and indexed document body text via hierarchical chunks (full-body literal matching, eventually consistent with chunking) — the backend shipped this in web PR #249; the description previously claimed coverage stopped at "the first ~4 KiB of document content."
+- **`formatFindItems` renders the new literal-search metadata.** Document rows now include an indented `> snippet` quote line when the backend attaches a `highlight`, and an `(id: ..., chunkId: ...)` token when the match came from a body chunk — the `chunkId` feeds directly into `deep_read` / `deep_expand`. Snippet newlines are flattened so the quote stays a single well-formed markdown line. Byte-for-byte lockstep with the web's `find-items-formatter.ts`.
+
+### Documentation
+- `README.md` gains a "Literal Mode Coverage" section documenting full-body literal matching, eventual consistency with chunking, and the `highlight`/`chunkId` fields on body-matched document hits.
+
 ## [2.2.2] - 2026-06-02
 
 ### Versioning note
