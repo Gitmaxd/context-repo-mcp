@@ -289,6 +289,7 @@ Semantic search uses AI embeddings to understand the meaning behind your query:
 | `query` | string | Yes | - | Natural language search query |
 | `type` | string | No | `"all"` | Filter: `"prompts"`, `"documents"`, `"collections"`, or `"all"` |
 | `semantic` | boolean | No | `true` | Use semantic search. Set `false` for literal matching |
+| `tags` | string[] | No | - | Tag filter (AND-semantics: all tags must match) |
 
 ### Literal Mode Coverage
 

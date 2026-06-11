@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2026-06-10
+
+### Versioning note
+- **PATCH** bump per SemVer. Documentation-only release (README ships in the npm tarball). No code, tool shape, or output contract changes — all 44 canonical fixtures remain byte-identical.
+
+### Documentation
+- **`find_items` Parameters table gains the missing `tags` row** (closes #24). The tool has accepted `tags: string[]` ("Tag filter (AND-semantics: all tags must match)") since v2.1.0 — the inputSchema, the `?tags=a,b` REST forwarding, the `find_items_with_tags` fixture, and the README's "Tags everywhere" callout all document it — but the parameter reference table where users look up call shapes listed only `query`, `type`, and `semantic`.
+
+### Platform note (no package change)
+- Backend fixes deployed 2026-06-10 (web repo PRs #252 and #253) made scoped `deep_search` (`collectionId`/`documentId`) and tag-filtered `find_items` recall reliable. Previously, scoped or tag-filtered searches competed for a small global candidate budget and could silently return empty results for items outside the user's global top-N; scope is now resolved before candidate generation. Calls through this package benefit automatically — no client update required.
+
 ## [2.2.3] - 2026-06-09
 
 ### Versioning note
