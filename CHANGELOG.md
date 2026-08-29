@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-29
+
+### Breaking changes
+
+- Replaced the duplicated local MCP server with a network-dependent stdio
+  bridge to `https://contextrepo.com/mcp`.
+- `CONTEXTREPO_API_KEY` is now the canonical API-key variable.
+  `CONTEXT_REPO_API_KEY` remains available as a deprecated compatibility
+  alias and emits a warning.
+- Removed the v2 `CONTEXTREPO_API_URL` REST override. Development and tests may
+  override the MCP endpoint with `CONTEXTREPO_MCP_URL`.
+
+### Changed
+
+- Tool, prompt, resource, error, and result behavior now comes directly from
+  the hosted Context Repo MCP instead of being independently implemented in
+  this package.
+- Hosted JSON-RPC responses pass through without reserialization, preserving
+  both `content` and `structuredContent` along with metadata and future fields.
+- Replaced the MCP SDK, Zod, and Vitest with Node.js built-ins and
+  `node:test`. The package now has no runtime or development dependencies.
+- Added generic timeout, redirect, malformed-response, notification,
+  concurrency, and packed-artifact coverage.
+
+### Migration
+
+- OAuth-capable remote MCP clients should connect directly to
+  `https://contextrepo.com/mcp`; this npm process does not implement OAuth.
+- stdio-only or API-key-oriented clients should continue launching
+  `context-repo-mcp` with `CONTEXTREPO_API_KEY`.
+- Version `2.2.4` is the documented rollback target if v3 must be removed from
+  the npm `latest` dist-tag.
+
 ## [2.2.4] - 2026-06-10
 
 ### Versioning note

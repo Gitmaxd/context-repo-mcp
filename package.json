@@ -1,7 +1,7 @@
 {
   "name": "context-repo-mcp",
-  "version": "2.2.4",
-  "description": "MCP Server for Context Repo - connect any MCP client to your prompts, documents, and collections",
+  "version": "3.0.0",
+  "description": "stdio bridge to the hosted Context Repo MCP",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "vitest run",
+    "test": "node --test",
     "prepublishOnly": "npm test"
   },
   "keywords": [
@@ -53,11 +53,5 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0",
-    "zod": "^3.25.0"
-  },
-  "devDependencies": {
-    "vitest": "^4.0.18"
-  }
+  "dependencies": {}
 }
