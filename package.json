@@ -1,6 +1,6 @@
 {
   "name": "context-repo-mcp",
-  "version": "3.0.0",
+  "version": "3.0.0-rc.1",
   "description": "stdio bridge to the hosted Context Repo MCP",
   "type": "module",
   "main": "src/index.js",
