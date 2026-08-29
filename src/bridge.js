@@ -91,7 +91,7 @@ export async function forwardPayload(
   }
 
   if (body === "") {
-    if (response.status === 202 || (response.ok && notification)) return null;
+    if (response.ok && notification) return null;
     throw bridgeFailure();
   }
 

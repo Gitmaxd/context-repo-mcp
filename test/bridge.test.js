@@ -54,6 +54,23 @@ test("returns no stdio payload for an empty 202 notification response", async ()
   assert.equal(result, null);
 });
 
+test("rejects an empty 202 response to a JSON-RPC request", async () => {
+  await assert.rejects(
+    forwardPayload(
+      '{"jsonrpc":"2.0","id":18,"method":"tools/list","params":{}}',
+      config,
+      {
+        fetchImpl: async () =>
+          new Response(null, {
+            status: 202,
+            headers: { "content-type": "application/json" },
+          }),
+      },
+    ),
+    /^Error: Context Repo bridge could not reach the hosted MCP server$/,
+  );
+});
+
 test("relays a hosted JSON-RPC error unchanged", async () => {
   const body =
     '{"jsonrpc":"2.0","id":"request-1","error":{"code":-32601,"message":"No such method"}}';
