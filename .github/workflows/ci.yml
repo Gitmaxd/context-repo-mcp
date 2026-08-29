@@ -28,3 +28,9 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+
+      - name: Test packed artifact
+        if: matrix.node == '18'
+        run: |
+          TARBALL="$(npm pack --silent)"
+          node test/packed-bin.test.js "$TARBALL"
