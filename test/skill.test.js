@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const skillUrl = new URL("../SKILL.md", import.meta.url);
+const readmeUrl = new URL("../README.md", import.meta.url);
 
 test("distributed skill follows the hosted MCP surface", async () => {
   const skill = await readFile(skillUrl, "utf8");
@@ -24,4 +25,13 @@ test("distributed skill follows the hosted MCP surface", async () => {
 
   assert.doesNotMatch(skill, /\b(?:27|28) tools\b/);
   assert.doesNotMatch(skill, /MCP accepts lease credentials/);
+});
+
+test("README explains skill distribution and installation", async () => {
+  const readme = await readFile(readmeUrl, "utf8");
+
+  assert.match(readme, /npx skills add Gitmaxd\/context-repo-mcp/);
+  assert.match(readme, /npx skills update context-repo-mcp/);
+  assert.match(readme, /not bundled in the npm package/);
+  assert.match(readme, /does not connect an MCP client/);
 });

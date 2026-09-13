@@ -84,6 +84,40 @@ npm install --global context-repo-mcp
 context-repo-mcp
 ```
 
+## Agent skill
+
+This repository also distributes [`SKILL.md`](SKILL.md), reusable guidance that
+teaches compatible agents when and how to use Context Repo. It covers:
+
+- item-level search across prompts, documents, and collections;
+- hierarchical search and navigation within document content;
+- cited, best-effort answers over stored documents with `reason`;
+- revision-safe document updates and restores with required
+  `expectedRevision`; and
+- the distinction between direct OAuth connections and the API-key stdio
+  bridge.
+
+The skill is installed from this GitHub repository by the Skills CLI. It is
+not bundled in the npm package, and running `npx context-repo-mcp` does not
+install it.
+
+Install the skill globally for supported agents:
+
+```bash
+npx skills add Gitmaxd/context-repo-mcp --global
+```
+
+Update an existing installation after a skill change is merged:
+
+```bash
+npx skills update context-repo-mcp
+```
+
+Installing the skill does not connect an MCP client, provide credentials, or
+add tools by itself. Configure either the direct hosted connection or the
+stdio bridge separately, as described above. Start a new agent session if an
+updated skill is not yet visible.
+
 ## Runtime behavior
 
 - Reads one JSON-RPC payload per non-empty stdin line.
