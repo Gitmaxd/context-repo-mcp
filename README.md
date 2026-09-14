@@ -126,7 +126,8 @@ updated skill is not yet visible.
 - Writes each hosted JSON-RPC response as one stdout line.
 - Allows concurrent requests to finish out of order using JSON-RPC IDs.
 - Writes diagnostics only to stderr and never logs keys or payloads.
-- Uses a 30-second timeout, does not follow redirects, and does not retry.
+- Uses a 90-second timeout for `reason` and 30 seconds for other requests,
+  does not follow redirects, and does not retry.
 - Requires JSON responses. SSE or malformed upstream responses fail closed.
 
 Because the hosted MCP owns its protocol surface, use `tools/list`,

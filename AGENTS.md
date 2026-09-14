@@ -50,7 +50,8 @@ Automated tests must not call `contextrepo.com` or require a real API key.
 - Never log keys, authorization headers, request bodies, response bodies,
   stack traces, filesystem paths, or raw network errors.
 - Do not retry POST requests.
-- Use `redirect: "error"` and the 30-second abort timeout.
+- Use `redirect: "error"`, a 90-second abort timeout for `reason`, and a
+  30-second abort timeout for other requests.
 - Treat SSE, multiline JSON, malformed JSON, and non-JSON responses as
   failures. Do not add an SSE parser.
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Increased the hosted response timeout for the `reason` tool from 30 to 90
+  seconds. Other MCP requests retain the 30-second timeout.
+
 ## [3.0.0] - 2026-08-29
 
 ### Breaking changes
