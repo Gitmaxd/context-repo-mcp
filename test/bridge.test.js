@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { forwardPayload } from "../src/bridge.js";
+import {
+  DEFAULT_TIMEOUT_MS,
+  REASON_TIMEOUT_MS,
+  forwardPayload,
+  requestTimeoutMs,
+} from "../src/bridge.js";
 
 const config = {
   apiKey: "gm_test",
@@ -15,6 +20,37 @@ function jsonResponse(body, init = {}) {
     ...init,
   });
 }
+
+test("uses a longer timeout only for the reason tool", () => {
+  assert.equal(
+    requestTimeoutMs({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "reason", arguments: { query: "Explain this" } },
+    }),
+    REASON_TIMEOUT_MS,
+  );
+  assert.equal(REASON_TIMEOUT_MS, 90_000);
+
+  for (const input of [
+    {
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: { name: "find_items", arguments: { query: "Explain this" } },
+    },
+    {
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/list",
+      params: {},
+    },
+  ]) {
+    assert.equal(requestTimeoutMs(input), DEFAULT_TIMEOUT_MS);
+  }
+  assert.equal(DEFAULT_TIMEOUT_MS, 30_000);
+});
 
 test("sends the exact hosted request contract", async () => {
   const payload = '{"jsonrpc":"2.0","id":1,"method":"example","params":{}}';

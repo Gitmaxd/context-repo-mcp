@@ -1,5 +1,7 @@
 export const BRIDGE_FAILURE_MESSAGE =
   "Context Repo bridge could not reach the hosted MCP server";
+export const DEFAULT_TIMEOUT_MS = 30_000;
+export const REASON_TIMEOUT_MS = 90_000;
 
 function isJsonContentType(value) {
   const mediaType = value?.split(";", 1)[0].trim().toLowerCase();
@@ -58,15 +60,24 @@ export function isNotification(value) {
   );
 }
 
+export function requestTimeoutMs(input) {
+  return input?.method === "tools/call" && input.params?.name === "reason"
+    ? REASON_TIMEOUT_MS
+    : DEFAULT_TIMEOUT_MS;
+}
+
 export async function forwardPayload(
   payload,
   config,
-  { fetchImpl = fetch, timeoutMs = 30_000 } = {},
+  { fetchImpl = fetch, timeoutMs } = {},
 ) {
   const input = JSON.parse(payload);
   const notification = isNotification(input);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    timeoutMs ?? requestTimeoutMs(input),
+  );
 
   let response;
   let body;

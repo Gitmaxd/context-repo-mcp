@@ -7,38 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.0] - 2026-08-29
-
-### Breaking changes
-
-- Replaced the duplicated local MCP server with a network-dependent stdio
-  bridge to `https://contextrepo.com/mcp`.
-- `CONTEXTREPO_API_KEY` is now the canonical API-key variable.
-  `CONTEXT_REPO_API_KEY` remains available as a deprecated compatibility
-  alias and emits a warning.
-- Removed the v2 `CONTEXTREPO_API_URL` REST override. Development and tests may
-  override the MCP endpoint with `CONTEXTREPO_MCP_URL`.
+## [3.0.1] - 2026-09-14
 
 ### Changed
 
-- Tool, prompt, resource, error, and result behavior now comes directly from
-  the hosted Context Repo MCP instead of being independently implemented in
-  this package.
-- Hosted JSON-RPC responses pass through without reserialization, preserving
-  both `content` and `structuredContent` along with metadata and future fields.
-- Replaced the MCP SDK, Zod, and Vitest with Node.js built-ins and
-  `node:test`. The package now has no runtime or development dependencies.
-- Added generic timeout, redirect, malformed-response, notification,
-  concurrency, and packed-artifact coverage.
+- Increased the hosted response timeout for the `reason` tool from 30 to 90
+  seconds. Other MCP requests retain the 30-second timeout.
+
+## [3.0.0] - 2026-08-29
+
+### Changed
+
+- **Breaking:** Replaced the package-local MCP server and its REST API
+  dispatch with a thin stdio bridge to the hosted MCP at
+  `https://contextrepo.com/mcp`. Each successfully parsed stdin line is now
+  forwarded as one authenticated HTTP POST instead of being handled by
+  package-local tool callbacks.
+- Moved ownership of tools, prompts, resources, schemas, business errors, and
+  result shapes to the hosted MCP. Pinning the npm package now pins the bridge
+  implementation, not the hosted protocol surface.
+- Changed stdio request handling to dispatch requests concurrently, preserve
+  JSON-RPC IDs on out-of-order responses, and wait for in-flight requests
+  before exiting after normal stdin EOF.
+- Changed hosted-response handling to validate JSON media types and JSON-RPC
+  envelopes, then relay the original accepted response text without
+  reserialization. This preserves `content`, `structuredContent`, `_meta`,
+  numeric text, whitespace, escaping, and unknown future fields.
+- Replaced Vitest with the built-in `node:test` runner.
+
+### Added
+
+- Added `CONTEXTREPO_MCP_URL` as a development and test override for the
+  hosted MCP endpoint. Non-loopback overrides require HTTPS; loopback HTTP is
+  supported for `localhost`, `127.0.0.1`, and `[::1]`.
+- Added stable bridge-level JSON-RPC failures for requests and
+  notification-specific failure handling that emits no notification response.
+- Added transport coverage for exact request and response bytes, timeouts,
+  redirects, malformed responses, notifications, concurrency, process
+  shutdown, closed stdout pipes, and installed tarballs.
+- Added packed-artifact verification to CI and the release workflow. Releases
+  now verify the tag against `package.json`, test the exact generated tarball,
+  and publish that same artifact under `next` for prereleases or `latest` for
+  stable versions.
+
+### Deprecated
+
+- Added `CONTEXT_REPO_API_KEY` as a deprecated compatibility alias for the
+  existing `CONTEXTREPO_API_KEY` variable. Using the alias emits one warning
+  to stderr; if both names are configured, their values must match.
+
+### Removed
+
+- **Breaking:** Removed the v2 `CONTEXTREPO_API_URL` REST endpoint override.
+  `CONTEXTREPO_MCP_URL` targets an MCP endpoint and is not a drop-in REST URL
+  replacement.
+- Removed package-local tool registrations, REST routing, response formatters,
+  canonical response fixtures, and duplicated business-contract tests. Those
+  contracts are now defined and exercised by the hosted MCP.
+- Removed the MCP SDK, Zod, and Vitest dependency trees. The package now has
+  no runtime or development dependencies.
+
+### Fixed
+
+- Empty successful HTTP responses are now accepted only for JSON-RPC
+  notifications. An empty response to a request produces a bridge failure
+  instead of silently dropping the pending request.
+
+### Security
+
+- Added API-key configuration validation without including key values in
+  diagnostics. Keys must be non-empty and begin with `gm_`; conflicting
+  canonical and compatibility values are rejected.
+- Restricted custom MCP endpoints to HTTPS except for explicit loopback HTTP,
+  and rejected endpoint URLs containing embedded credentials or fragments.
+- Disabled redirects and automatic POST retries, and applied a 30-second
+  timeout to the complete hosted response.
+- Added fail-closed validation for response media types, single-line response
+  framing, JSON parsing, and JSON-RPC envelopes. SSE, multiline JSON, HTML,
+  plain text, malformed JSON, and invalid JSON-RPC responses are rejected.
+- Prevented raw network errors, upstream bodies, credentials, request
+  payloads, stack traces, and local filesystem paths from being copied into
+  bridge diagnostics.
 
 ### Migration
 
-- OAuth-capable remote MCP clients should connect directly to
-  `https://contextrepo.com/mcp`; this npm process does not implement OAuth.
-- stdio-only or API-key-oriented clients should continue launching
+- OAuth-capable MCP clients should connect directly to
+  `https://contextrepo.com/mcp`. The npm bridge supports API-key
+  authentication only and does not implement an OAuth flow.
+- Stdio-only or API-key-oriented clients should continue launching
   `context-repo-mcp` with `CONTEXTREPO_API_KEY`.
-- Version `2.2.4` is the documented rollback target if v3 must be removed from
-  the npm `latest` dist-tag.
+- Development and test configurations using `CONTEXTREPO_API_URL` must move
+  to the MCP-specific `CONTEXTREPO_MCP_URL` override.
+- Version `2.2.4` remains the explicit temporary fallback for clients that
+  cannot migrate to the hosted bridge immediately.
 
 ## [2.2.4] - 2026-06-10
 
